@@ -4,7 +4,7 @@ import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 // Guards
-import { ProtectedRoute, PublicRoute, AdminRoute } from './utils/roleGuard'
+import { ProtectedRoute, PublicRoute, AdminRoute } from './utils/roleGuard.jsx'
 
 // Layout
 import Layout from './components/layout/Layout'
