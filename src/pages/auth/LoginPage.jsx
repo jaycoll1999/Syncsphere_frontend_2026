@@ -19,6 +19,30 @@ const LoginPage = () => {
   const onSubmit = async (data) => {
     setLoading(true)
     try {
+      // Handle mock admin login for development
+      if (selectedRole === 'admin' && activeTab === 'signin') {
+        if (data.email === 'admin@gmail.com' && data.password === 'admin@123') {
+          const mockUser = {
+            id: 1,
+            email: 'admin@gmail.com',
+            name: 'Admin User',
+            role: 'ADMIN'
+          }
+          const mockToken = 'mock-admin-token-' + Date.now()
+          
+          login(mockUser, mockToken)
+          toast.success('Logged in successfully as admin!')
+          navigate('/admin')
+          setLoading(false)
+          return
+        } else {
+          toast.error('Invalid admin credentials. Use admin@gmail.com / admin@123')
+          setLoading(false)
+          return
+        }
+      }
+
+      // Regular API call for user/employee login
       const endpoint = activeTab === 'signin' ? '/auth/login' : '/auth/register'
       const payload = { ...data, role: selectedRole.toUpperCase() }
       
