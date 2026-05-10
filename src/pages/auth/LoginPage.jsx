@@ -5,7 +5,7 @@ import { useAuthStore } from '../../store/authStore'
 import axiosInstance from '../../api/axiosInstance'
 import { toast } from 'react-toastify'
 import { Eye, EyeOff, User, Shield, CheckCircle2 } from 'lucide-react'
-import Button from '../../components/shared/Button'
+import { motion } from 'framer-motion'
 
 const LoginPage = () => {
   const [activeTab, setActiveTab] = useState('signin')
@@ -47,178 +47,240 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen flex bg-gray-900 text-white">
-      {/* Left Side - Promo */}
-      <div className="hidden lg:flex lg:w-1/2 bg-indigo-700 p-12 flex-col justify-center">
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center space-x-2 mb-8">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-black text-white font-sans">
+      {/* Background Image System */}
+      <div className="absolute inset-0 z-0">
+        <div 
+          className="w-full h-full bg-cover bg-center transition-transform duration-1000 scale-105"
+          style={{ backgroundImage: "url('/syncsphere_bg.png')", filter: "brightness(0.6)" }}
+        />
+      </div>
+
+      {/* Overlays */}
+      <div className="absolute inset-0 bg-black/40 z-10"></div>
+      <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-transparent to-black/40 z-10"></div>
+
+      {/* Content Container (Split Layout on Desktop) */}
+      <div className="container mx-auto max-w-7xl px-6 flex flex-col lg:flex-row items-center justify-between relative z-20 h-full min-h-screen py-12">
+        
+        {/* Left Side Content (Text Over Image) */}
+        <div className="w-full lg:w-1/2 text-left mb-12 lg:mb-0 lg:pr-12">
+          {/* Logo */}
+          <motion.div 
+            className="flex items-center space-x-3 mb-12"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/30">
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-white">SyncSphere</h1>
-          </div>
-          
-          <h2 className="text-2xl font-semibold mb-6">One platform for your team's time.</h2>
-          
-          <ul className="space-y-4">
-            <li className="flex items-center space-x-3">
-              <CheckCircle2 className="h-6 w-6 text-indigo-300" />
-              <span>Smart team calendar & scheduling</span>
-            </li>
-            <li className="flex items-center space-x-3">
-              <CheckCircle2 className="h-6 w-6 text-indigo-300" />
-              <span>Leave management with approvals</span>
-            </li>
-            <li className="flex items-center space-x-3">
-              <CheckCircle2 className="h-6 w-6 text-indigo-300" />
-              <span>Real-time notifications</span>
-            </li>
-          </ul>
-        </div>
-      </div>
+            <h1 className="text-xl font-bold tracking-tight text-white">SyncSphere</h1>
+          </motion.div>
 
-      {/* Right Side - Form */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-gray-900">
-        <div className="max-w-md w-full bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700">
-          {/* Tabs */}
-          <div className="flex bg-gray-700 rounded-lg p-1 mb-8">
-            <button
-              type="button"
-              className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'signin' ? 'bg-gray-800 text-white shadow' : 'text-gray-400 hover:text-white'}`}
-              onClick={() => setActiveTab('signin')}
-            >
-              Sign In
-            </button>
-            {selectedRole === 'user' && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <h2 className="text-5xl lg:text-6xl font-extrabold leading-tight mb-6 bg-gradient-to-r from-white via-indigo-100 to-indigo-200 bg-clip-text text-transparent drop-shadow-lg">
+              One platform for your team's time.
+            </h2>
+            <p className="text-xl text-gray-300 mb-10 max-w-lg drop-shadow">
+              Streamline scheduling, manage leaves, and stay in sync with real-time updates.
+            </p>
+
+            {/* Stats Row */}
+            <div className="flex flex-wrap gap-8 text-sm font-medium text-gray-400">
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-white">10K+</span>
+                <span>Events Managed</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-white">50+</span>
+                <span>Teams</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-2xl font-bold text-white">99.9%</span>
+                <span>Uptime</span>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Right Side - Auth Card */}
+        <div className="w-full lg:w-1/2 flex justify-center">
+          <motion.div 
+            className="max-w-md w-full bg-white/10 backdrop-blur-xl p-8 rounded-2xl shadow-2xl border border-white/20 ring-1 ring-white/10 relative z-30"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+          >
+            {/* Tabs */}
+            <div className="relative flex bg-white/5 rounded-lg p-1 mb-8 border border-white/10">
+              <div 
+                className={`absolute top-1 bottom-1 ${selectedRole === 'admin' ? 'w-[calc(100%-0.5rem)]' : 'w-[calc(50%-0.25rem)]'} bg-indigo-600 rounded-md shadow-md transition-all duration-300 ease-in-out ${activeTab === 'signin' ? 'left-1' : 'left-[50%]'}`}
+              />
               <button
                 type="button"
-                className={`flex-1 py-2 text-sm font-medium rounded-md transition-colors ${activeTab === 'signup' ? 'bg-gray-800 text-white shadow' : 'text-gray-400 hover:text-white'}`}
-                onClick={() => setActiveTab('signup')}
+                className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signin' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
+                onClick={() => setActiveTab('signin')}
               >
-                Sign Up
+                Sign In
               </button>
-            )}
-          </div>
-
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {activeTab === 'signup' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Name</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="Your Name"
-                  {...register('name', { required: activeTab === 'signup' })}
-                />
-                {errors.name && <p className="mt-1 text-xs text-red-500">Name is required</p>}
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Email address</label>
-              <input
-                type="email"
-                className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                placeholder="Email address"
-                {...register('email', { required: 'Email is required' })}
-              />
-              {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>}
+              {selectedRole === 'user' && (
+                <button
+                  type="button"
+                  className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signup' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
+                  onClick={() => setActiveTab('signup')}
+                >
+                  Sign Up
+                </button>
+              )}
             </div>
 
-            <div>
-              <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-gray-300">Password</label>
-                {activeTab === 'signin' && (
-                  <Link to="/forgot-password" title="Forgot password?" className="text-sm text-indigo-400 hover:text-indigo-300">
-                    Forgot password?
-                  </Link>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  placeholder="Password"
-                  {...register('password', { required: 'Password is required' })}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
-                >
-                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                </button>
-              </div>
-              {errors.password && <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>}
-            </div>
+            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+              {activeTab === 'signup' && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-2 uppercase tracking-wider">Name</label>
+                  <input
+                    type="text"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300"
+                    placeholder="John Doe"
+                    {...register('name', { required: activeTab === 'signup' })}
+                  />
+                  {errors.name && <p className="mt-1.5 text-xs text-red-500">Name is required</p>}
+                </div>
+              )}
 
-            {/* Role Selection */}
-            {activeTab === 'signup' ? (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Role</label>
-                <select
-                  className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                  defaultValue="user"
-                  onChange={(e) => setSelectedRole(e.target.value)}
-                >
-                  <option value="user">User</option>
-                  <option value="employee">Employee</option>
-                </select>
+                <label className="block text-xs font-medium text-gray-300 mb-2 uppercase tracking-wider">Email Address</label>
+                <input
+                  type="email"
+                  className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300"
+                  placeholder="you@example.com"
+                  {...register('email', { required: 'Email is required' })}
+                />
+                {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
               </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-colors ${selectedRole === 'user' ? 'bg-gray-600 border-indigo-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600'}`}
-                  onClick={() => setSelectedRole('user')}
-                >
-                  <User className="h-6 w-6 mb-1" />
-                  <span className="text-xs font-medium">User</span>
-                </button>
-                <button
-                  type="button"
-                  className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-colors ${selectedRole === 'admin' ? 'bg-gray-600 border-indigo-500 text-white' : 'bg-gray-700 border-gray-600 text-gray-400 hover:bg-gray-600'}`}
-                  onClick={() => {
-                    setSelectedRole('admin')
-                    setActiveTab('signin')
-                  }}
-                >
-                  <Shield className="h-6 w-6 mb-1" />
-                  <span className="text-xs font-medium">Admin</span>
-                </button>
-              </div>
-            )}
 
-            <Button
-              type="submit"
-              className="w-full justify-center bg-gray-700 hover:bg-gray-600 text-white border border-gray-600"
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : activeTab === 'signin' ? 'Sign In' : 'Sign Up'}
-            </Button>
-
-            {selectedRole === 'user' && (
-              <div className="text-center text-sm text-gray-400">
-                {activeTab === 'signin' ? (
-                  <>
-                    No account?{' '}
-                    <button type="button" onClick={() => setActiveTab('signup')} className="text-indigo-400 hover:text-indigo-300">
-                      Sign up
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Already have an account?{' '}
-                    <button type="button" onClick={() => setActiveTab('signin')} className="text-indigo-400 hover:text-indigo-300">
-                      Sign in
-                    </button>
-                  </>
-                )}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-xs font-medium text-gray-300 uppercase tracking-wider">Password</label>
+                  {activeTab === 'signin' && (
+                    <Link to="/forgot-password" title="Forgot password?" className="text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors">
+                      Forgot?
+                    </Link>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300"
+                    placeholder="••••••••"
+                    {...register('password', { required: 'Password is required' })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+                {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password.message}</p>}
               </div>
-            )}
-          </form>
+
+              {/* Remember Me */}
+              {activeTab === 'signin' && (
+                <div className="flex items-center">
+                  <input
+                    id="rememberMe"
+                    type="checkbox"
+                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-white/20 rounded bg-white/10"
+                    {...register('rememberMe')}
+                  />
+                  <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-300">
+                    Remember me
+                  </label>
+                </div>
+              )}
+
+              {/* Role Selection */}
+              {activeTab === 'signup' ? (
+                <div>
+                  <label className="block text-xs font-medium text-gray-300 mb-2 uppercase tracking-wider">Role</label>
+                  <div className="relative">
+                    <select
+                      className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300 appearance-none"
+                      defaultValue="user"
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                    >
+                      <option value="user" className="bg-[#0B0F17] text-white">User</option>
+                      <option value="employee" className="bg-[#0B0F17] text-white">Employee</option>
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-all duration-300 transform hover:scale-105 ${selectedRole === 'user' ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                    onClick={() => setSelectedRole('user')}
+                  >
+                    <User className="h-4 w-4" />
+                    <span className="text-sm font-semibold">User</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-all duration-300 transform hover:scale-105 ${selectedRole === 'admin' ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                    onClick={() => {
+                      setSelectedRole('admin')
+                      setActiveTab('signin')
+                    }}
+                  >
+                    <Shield className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Admin</span>
+                  </button>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full justify-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-4 rounded-lg shadow-lg shadow-indigo-500/40 transform hover:scale-[1.03] active:scale-[0.98] transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#020617]"
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : activeTab === 'signin' ? 'Sign In' : 'Sign Up'}
+              </button>
+
+              {selectedRole === 'user' && (
+                <div className="text-center text-sm text-gray-400 mt-6">
+                  {activeTab === 'signin' ? (
+                    <>
+                      No account?{' '}
+                      <button type="button" onClick={() => setActiveTab('signup')} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                        Sign up
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      Already have an account?{' '}
+                      <button type="button" onClick={() => setActiveTab('signin')} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                        Sign in
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </form>
+          </motion.div>
         </div>
       </div>
     </div>
