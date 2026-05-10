@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  /* Calendar overrides */
+  .rbc-today {
+    @apply bg-indigo-100 dark:bg-indigo-900/30 !important;
+  }
+  .rbc-header {
+    @apply bg-gray-50 dark:bg-gray-800 !important;
+  }
+  .rbc-event {
+    @apply text-white text-[12px] !important;
+  }
+  .rbc-off-range-bg {
+    @apply bg-gray-100 dark:bg-gray-800/50 !important;
+  }
+  /* Borders */
+  .rbc-month-view, .rbc-time-view, .rbc-agenda-view {
+    @apply border-gray-200 dark:border-gray-700 !important;
+  }
+  .rbc-day-bg + .rbc-day-bg, .rbc-month-row + .rbc-month-row, .rbc-time-content > * + * {
+    @apply border-gray-200 dark:border-gray-700 !important;
+  }
+}
