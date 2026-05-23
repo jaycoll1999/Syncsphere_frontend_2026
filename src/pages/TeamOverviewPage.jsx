@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, CheckCircle, Clock, 
   Briefcase, Mail, X, Plus, Calendar, Shield, User
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useAuthStore } from '../store/authStore';
 
 const TeamOverviewPage = () => {
-  // Mock Team Data
+  const { user } = useAuthStore();
   const [teamMembers, setTeamMembers] = useState([
     { id: 1, name: 'Alex Morgan', role: 'Lead Developer', email: 'alex@example.com', avatar: 'A', tasks: 5 },
     { id: 2, name: 'Sarah Chen', role: 'UI/UX Designer', email: 'sarah@example.com', avatar: 'S', tasks: 2 },
@@ -16,6 +17,25 @@ const TeamOverviewPage = () => {
     { id: 5, name: 'David Kim', role: 'QA Tester', email: 'david@example.com', avatar: 'D', tasks: 3 },
     { id: 6, name: 'Emily Clark', role: 'Frontend Engineer', email: 'emily@example.com', avatar: 'E', tasks: 0 }
   ]);
+
+  useEffect(() => {
+    if (user) {
+      setTeamMembers(prev => {
+        if (prev.some(m => m.email === user.email)) return prev;
+        return [
+          ...prev,
+          {
+            id: Math.max(...prev.map(m => m.id), 0) + 1,
+            name: `${user.first_name || 'Shree'} ${user.last_name || 'Bhore'}`,
+            role: user.role === 'INTERN' ? 'Intern' : user.role === 'EMPLOYEE' ? 'Employee' : 'Admin',
+            email: user.email,
+            avatar: (user.first_name || 'S')[0].toUpperCase(),
+            tasks: 0
+          }
+        ];
+      });
+    }
+  }, [user]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,46 +104,97 @@ const TeamOverviewPage = () => {
 
         {/* Team Members Grid */}
         <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {teamMembers.map((member) => (
-            <div key={member.id} className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-3xl p-6 shadow-xl shadow-gray-200/20 dark:shadow-none hover:shadow-2xl transition-all duration-300 relative group overflow-hidden flex flex-col h-full">
-              {/* Card Background Decoration */}
-              <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-colors" />
-              
-              <div className="flex items-start gap-4 mb-6 relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5 shadow-lg shadow-indigo-500/30 shrink-0">
-                  <div className="w-full h-full bg-white dark:bg-[#111827] rounded-xl flex items-center justify-center">
-                    <span className="text-2xl font-bold bg-gradient-to-tr from-indigo-500 to-purple-500 bg-clip-text text-transparent">{member.avatar}</span>
+          {teamMembers.map((member) => {
+            const canManage = user?.role !== 'INTERN' || member.email === user?.email;
+            
+            return (
+              <div key={member.id} className="bg-white dark:bg-white/5 border border-gray-100 dark:border-white/10 rounded-3xl p-6 shadow-xl shadow-gray-200/20 dark:shadow-none hover:shadow-2xl transition-all duration-300 relative group overflow-hidden flex flex-col h-full">
+                {/* Card Background Decoration */}
+                <div className="absolute top-0 right-0 -mt-8 -mr-8 w-32 h-32 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl pointer-events-none group-hover:bg-indigo-500/20 transition-colors" />
+                
+                <div className="flex items-start gap-4 mb-6 relative z-10">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-500 p-0.5 shadow-lg shadow-indigo-500/30 shrink-0">
+                    <div className="w-full h-full bg-white dark:bg-[#111827] rounded-xl flex items-center justify-center">
+                      <span className="text-2xl font-bold bg-gradient-to-tr from-indigo-500 to-purple-500 bg-clip-text text-transparent">{member.avatar}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{member.name}</h3>
+                    <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 text-sm font-medium mt-0.5">
+                      <Briefcase className="w-4 h-4" />
+                      {member.role}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">{member.name}</h3>
-                  <div className="flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 text-sm font-medium mt-0.5">
-                    <Briefcase className="w-4 h-4" />
-                    {member.role}
+
+                <div className="space-y-3 mb-8 relative z-10 flex-1">
+                  <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300 text-sm">
+                    <Mail className="w-4 h-4 text-gray-400" />
+                    {member.email}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300 text-sm">
+                      <CheckCircle className="w-4 h-4 text-emerald-500" />
+                      <span className="font-semibold text-gray-900 dark:text-white">{member.tasks}</span> Active Tasks
+                    </div>
+                    {canManage && (
+                      <div className="flex items-center gap-1.5 relative z-20">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (member.tasks > 0) {
+                              setTeamMembers(prev => prev.map(m => 
+                                m.id === member.id ? { ...m, tasks: m.tasks - 1 } : m
+                              ));
+                              toast.success('Task removed!');
+                            }
+                          }}
+                          className="p-1 bg-red-50 dark:bg-red-500/10 hover:bg-red-500 hover:text-white text-red-500 dark:hover:bg-red-500 rounded-lg transition-colors border border-red-200 dark:border-red-500/20 flex items-center justify-center w-7 h-7 font-bold text-lg"
+                          title="Remove Task"
+                        >
+                          -
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setTeamMembers(prev => prev.map(m => 
+                              m.id === member.id ? { ...m, tasks: m.tasks + 1 } : m
+                            ));
+                            toast.success('Task added!');
+                          }}
+                          className="p-1 bg-emerald-50 dark:bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-500 dark:hover:bg-emerald-500 rounded-lg transition-colors border border-emerald-200 dark:border-emerald-500/20 flex items-center justify-center w-7 h-7 font-bold text-lg"
+                          title="Add Task"
+                        >
+                          +
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              <div className="space-y-3 mb-8 relative z-10 flex-1">
-                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300 text-sm">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  {member.email}
-                </div>
-                <div className="flex items-center gap-3 text-gray-600 dark:text-gray-300 text-sm">
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
-                  <span className="font-semibold text-gray-900 dark:text-white">{member.tasks}</span> Active Tasks
-                </div>
+                {canManage ? (
+                  <button 
+                    onClick={() => openAssignModal(member)}
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-indigo-600 dark:text-indigo-400 font-semibold rounded-xl transition-all duration-300 relative z-10"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Assign New Task
+                  </button>
+                ) : (
+                  <button 
+                    disabled
+                    className="w-full flex items-center justify-center gap-2 py-3 bg-gray-100 dark:bg-white/5 text-gray-400 dark:text-gray-500 font-semibold rounded-xl cursor-not-allowed relative z-10"
+                  >
+                    View Only
+                  </button>
+                )}
               </div>
-
-              <button 
-                onClick={() => openAssignModal(member)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-50 dark:bg-indigo-500/10 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-600 text-indigo-600 dark:text-indigo-400 font-semibold rounded-xl transition-all duration-300 relative z-10"
-              >
-                <Plus className="w-5 h-5" />
-                Assign New Task
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </motion.div>
       </motion.div>
 

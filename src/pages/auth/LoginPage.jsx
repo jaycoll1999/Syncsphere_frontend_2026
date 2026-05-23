@@ -9,7 +9,7 @@ import { motion } from 'framer-motion'
 
 const LoginPage = () => {
   const [activeTab, setActiveTab] = useState('signin')
-  const [selectedRole, setSelectedRole] = useState('user')
+  const [selectedRole, setSelectedRole] = useState('INTERN')
   const { register, handleSubmit, formState: { errors } } = useForm()
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
@@ -26,36 +26,32 @@ const LoginPage = () => {
             first_name: data.first_name,
             last_name: data.last_name,
             email: data.email,
-            phone: data.phone,
-            role: selectedRole.toUpperCase(),
+            phone: String(data.phone),
+            role: selectedRole,
             password: data.password
           }
       
-      // MOCK LOGIN BYPASS
-      // const response = await axiosInstance.post(endpoint, payload)
-      // const { user, token } = response.data
+      const response = await axiosInstance.post(endpoint, payload)
+      const { user, token } = response.data
       
-      const user = {
-        id: 'mock-id-123',
-        first_name: data.first_name || 'Test',
-        last_name: data.last_name || 'User',
-        email: data.email,
-        role: selectedRole === 'admin' ? 'ADMIN' : 'USER',
-        phone: data.phone || '1234567890'
-      }
-      const token = 'mock-jwt-token-12345'
-      
-      // Artificial delay to simulate network request
-      await new Promise(resolve => setTimeout(resolve, 800))
-      
-      if (selectedRole === 'admin' && user.role !== 'ADMIN') {
+      if (selectedRole === 'ADMIN' && user.role !== 'ADMIN') {
         toast.error('Access denied. This login is for administrators only.')
+        setLoading(false)
+        return
+      }
+      if (selectedRole === 'EMPLOYEE' && user.role !== 'EMPLOYEE') {
+        toast.error('Access denied. This login is for employees only.')
+        setLoading(false)
+        return
+      }
+      if (selectedRole === 'INTERN' && user.role !== 'INTERN') {
+        toast.error('Access denied. This login is for interns only.')
         setLoading(false)
         return
       }
 
       login(user, token)
-      toast.success(`Logged in successfully as ${selectedRole}!`)
+      toast.success(activeTab === 'signin' ? `Logged in successfully as ${selectedRole.toLowerCase()}!` : `Registered successfully!`)
       
       if (user.role === 'ADMIN') {
         navigate('/admin')
@@ -144,7 +140,7 @@ const LoginPage = () => {
             {/* Tabs */}
             <div className="relative flex bg-white/5 rounded-lg p-1 mb-8 border border-white/10">
               <div 
-                className={`absolute top-1 bottom-1 ${selectedRole === 'admin' ? 'w-[calc(100%-0.5rem)]' : 'w-[calc(50%-0.25rem)]'} bg-indigo-600 rounded-md shadow-md transition-all duration-300 ease-in-out ${activeTab === 'signin' ? 'left-1' : 'left-[50%]'}`}
+                className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] bg-indigo-600 rounded-md shadow-md transition-all duration-300 ease-in-out ${activeTab === 'signin' ? 'left-1' : 'left-[50%]'}`}
               />
               <button
                 type="button"
@@ -153,15 +149,13 @@ const LoginPage = () => {
               >
                 Sign In
               </button>
-              {selectedRole !== 'admin' && (
-                <button
-                  type="button"
-                  className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signup' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
-                  onClick={() => setActiveTab('signup')}
-                >
-                  Sign Up
-                </button>
-              )}
+              <button
+                type="button"
+                className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signup' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                onClick={() => setActiveTab('signup')}
+              >
+                Sign Up
+              </button>
             </div>
 
             <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -262,11 +256,12 @@ const LoginPage = () => {
                   <div className="relative">
                     <select
                       className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300 appearance-none"
-                      defaultValue="user"
+                      defaultValue="INTERN"
                       onChange={(e) => setSelectedRole(e.target.value)}
                     >
-                      <option value="user" className="bg-[#0B0F17] text-white">User</option>
-                      <option value="employee" className="bg-[#0B0F17] text-white">Employee</option>
+                      <option value="INTERN" className="bg-[#0B0F17] text-white">Intern</option>
+                      <option value="EMPLOYEE" className="bg-[#0B0F17] text-white">Employee</option>
+                      <option value="ADMIN" className="bg-[#0B0F17] text-white">Admin</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -276,20 +271,28 @@ const LoginPage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     type="button"
-                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-all duration-300 transform hover:scale-105 ${selectedRole === 'user' ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
-                    onClick={() => setSelectedRole('user')}
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-all duration-300 transform hover:scale-105 ${selectedRole === 'INTERN' ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                    onClick={() => setSelectedRole('INTERN')}
                   >
                     <User className="h-4 w-4" />
-                    <span className="text-sm font-semibold">User</span>
+                    <span className="text-sm font-semibold">Intern</span>
                   </button>
                   <button
                     type="button"
-                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-all duration-300 transform hover:scale-105 ${selectedRole === 'admin' ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-all duration-300 transform hover:scale-105 ${selectedRole === 'EMPLOYEE' ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                    onClick={() => setSelectedRole('EMPLOYEE')}
+                  >
+                    <User className="h-4 w-4" />
+                    <span className="text-sm font-semibold">Employee</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`flex items-center justify-center space-x-2 p-3 rounded-lg border transition-all duration-300 transform hover:scale-105 ${selectedRole === 'ADMIN' ? 'bg-indigo-500/20 border-indigo-400 text-white shadow-lg shadow-indigo-500/30' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
                     onClick={() => {
-                      setSelectedRole('admin')
+                      setSelectedRole('ADMIN')
                       setActiveTab('signin')
                     }}
                   >
@@ -307,7 +310,7 @@ const LoginPage = () => {
                 {loading ? 'Processing...' : activeTab === 'signin' ? 'Sign In' : 'Sign Up'}
               </button>
 
-              {selectedRole === 'user' && (
+              {selectedRole !== 'ADMIN' && (
                 <div className="text-center text-sm text-gray-400 mt-6">
                   {activeTab === 'signin' ? (
                     <>
@@ -319,7 +322,14 @@ const LoginPage = () => {
                   ) : (
                     <>
                       Already have an account?{' '}
-                      <button type="button" onClick={() => setActiveTab('signin')} className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors">
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setActiveTab('signin')
+                          setSelectedRole('INTERN')
+                        }} 
+                        className="text-indigo-400 hover:text-indigo-300 font-medium transition-colors"
+                      >
                         Sign in
                       </button>
                     </>

@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import { Search, Moon, Sun, LogOut, User as UserIcon, Settings } from 'lucide-react'
+import { Search, Moon, Sun, LogOut, User as UserIcon, Settings, Menu } from 'lucide-react'
 import { useThemeStore } from '../../store/themeStore'
 import { useAuthStore } from '../../store/authStore'
 import NotificationBell from '../notifications/NotificationBell'
 import Avatar from '../shared/Avatar'
 import { Link, useNavigate } from 'react-router-dom'
 
-const Topbar = () => {
+const Topbar = ({ onMenuClick }) => {
   const { theme, toggleTheme } = useThemeStore()
   const { user, logout } = useAuthStore()
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
@@ -20,6 +20,12 @@ const Topbar = () => {
   return (
     <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 h-16 flex items-center justify-between px-4 sticky top-0 z-30">
       <div className="flex items-center flex-1">
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden mr-2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 focus:outline-none"
+        >
+          <Menu className="h-6 w-6" />
+        </button>
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white lg:hidden">SyncSphere</h2>
         <div className="hidden lg:flex max-w-md w-full relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
