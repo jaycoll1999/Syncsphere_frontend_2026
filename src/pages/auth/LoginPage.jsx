@@ -20,10 +20,33 @@ const LoginPage = () => {
     setLoading(true)
     try {
       const endpoint = activeTab === 'signin' ? '/auth/login' : '/auth/register'
-      const payload = { ...data, role: selectedRole.toUpperCase() }
+      const payload = activeTab === 'signin' 
+        ? { email: data.email, password: data.password }
+        : {
+            first_name: data.first_name,
+            last_name: data.last_name,
+            email: data.email,
+            phone: data.phone,
+            role: selectedRole.toUpperCase(),
+            password: data.password
+          }
       
-      const response = await axiosInstance.post(endpoint, payload)
-      const { user, token } = response.data
+      // MOCK LOGIN BYPASS
+      // const response = await axiosInstance.post(endpoint, payload)
+      // const { user, token } = response.data
+      
+      const user = {
+        id: 'mock-id-123',
+        first_name: data.first_name || 'Test',
+        last_name: data.last_name || 'User',
+        email: data.email,
+        role: selectedRole === 'admin' ? 'ADMIN' : 'USER',
+        phone: data.phone || '1234567890'
+      }
+      const token = 'mock-jwt-token-12345'
+      
+      // Artificial delay to simulate network request
+      await new Promise(resolve => setTimeout(resolve, 800))
       
       if (selectedRole === 'admin' && user.role !== 'ADMIN') {
         toast.error('Access denied. This login is for administrators only.')
@@ -130,10 +153,10 @@ const LoginPage = () => {
               >
                 Sign In
               </button>
-              {selectedRole === 'user' && (
+              {selectedRole !== 'admin' && (
                 <button
                   type="button"
-                  className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signup' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
+                  className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signup' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
                   onClick={() => setActiveTab('signup')}
                 >
                   Sign Up
@@ -143,16 +166,40 @@ const LoginPage = () => {
 
             <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
               {activeTab === 'signup' && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-300 mb-2 uppercase tracking-wider">Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300"
-                    placeholder="John Doe"
-                    {...register('name', { required: activeTab === 'signup' })}
-                  />
-                  {errors.name && <p className="mt-1.5 text-xs text-red-500">Name is required</p>}
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-300 mb-2 uppercase tracking-wider">First Name</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300"
+                        placeholder="John"
+                        {...register('first_name', { required: activeTab === 'signup' })}
+                      />
+                      {errors.first_name && <p className="mt-1.5 text-xs text-red-500">Required</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-300 mb-2 uppercase tracking-wider">Last Name</label>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300"
+                        placeholder="Doe"
+                        {...register('last_name', { required: activeTab === 'signup' })}
+                      />
+                      {errors.last_name && <p className="mt-1.5 text-xs text-red-500">Required</p>}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-300 mb-2 uppercase tracking-wider">Phone</label>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-3 bg-white/10 border border-white/10 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:shadow-[0_0_15px_rgba(99,102,241,0.3)] transition-all duration-300"
+                      placeholder="+1234567890"
+                      {...register('phone', { required: activeTab === 'signup' })}
+                    />
+                    {errors.phone && <p className="mt-1.5 text-xs text-red-500">Phone is required</p>}
+                  </div>
+                </>
               )}
 
               <div>

@@ -3,6 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
+// Image
+import developerLogo from './assets/developer-logo.png'
+
 // Guards
 import { ProtectedRoute, PublicRoute, AdminRoute } from './utils/roleGuard.jsx'
 
@@ -92,6 +95,30 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
+
+      {/* --- Developer Branding Badge --- */}
+      <div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-4 bg-white/80 dark:bg-[#0B0F19]/80 backdrop-blur-md px-5 py-3 rounded-full border border-gray-200 dark:border-white/10 shadow-2xl transition-transform duration-300 hover:-translate-y-1 cursor-pointer group">
+        {/* Text Section */}
+        <div className="flex flex-col text-right">
+          <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest group-hover:text-indigo-500 transition-colors">
+            Developed By
+          </span>
+          <span className="text-sm font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+            Jasak Solutions
+          </span>
+        </div>
+
+        {/* Logo Section */}
+        <div className="relative w-12 h-12 rounded-full p-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-lg flex-shrink-0">
+          <img 
+            src={developerLogo} 
+            alt="Developer Logo" 
+            className="w-full h-full object-cover rounded-full bg-white"
+          />
+        </div>
+      </div>
+      {/* -------------------------------- */}
+
     </BrowserRouter>
   )
 }
