@@ -8,9 +8,10 @@ export const useAuthStore = create(
       token: null,
       refreshToken: null,
       isAuthenticated: false,
-      login: (user, token, refreshToken) => set({ user, token, refreshToken, isAuthenticated: true }),
+      loginTime: null,
+      login: (user, token, refreshToken) => set({ user, token, refreshToken, isAuthenticated: true, loginTime: new Date().toISOString() }),
       logout: () => {
-        set({ user: null, token: null, refreshToken: null, isAuthenticated: false })
+        set({ user: null, token: null, refreshToken: null, isAuthenticated: false, loginTime: null })
         localStorage.removeItem('auth-storage') // Clear storage on logout
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
@@ -24,7 +25,8 @@ export const useAuthStore = create(
         token: state.token,
         refreshToken: state.refreshToken,
         user: state.user,
-        isAuthenticated: state.isAuthenticated
+        isAuthenticated: state.isAuthenticated,
+        loginTime: state.loginTime
       }),
     }
   )

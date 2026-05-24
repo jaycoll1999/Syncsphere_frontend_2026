@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import axiosInstance from '../api/axiosInstance';
 import { 
   ChevronLeft, ChevronRight, Plus, 
-  Calendar as CalendarIcon, X, Clock, Trash2
+  Calendar as CalendarIcon, X, Clock, Trash2,
+  ChevronDown
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 
@@ -40,14 +43,30 @@ const CalendarPage = () => {
     ...initialHolidays
   ]);
 
+  const navigate = useNavigate();
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState(null); // null means creating new
   const [selectedDate, setSelectedDate] = useState(null); // String 'YYYY-MM-DD'
+  
+  // 13 Fields Form State
   const [eventTitle, setEventTitle] = useState('');
-  const [eventStartTime, setEventStartTime] = useState('09:00');
-  const [eventEndTime, setEventEndTime] = useState('10:00');
-  const [eventColor, setEventColor] = useState('bg-indigo-500');
+  const [eventDescription, setEventDescription] = useState('');
+  const [eventType, setEventType] = useState('MEETING');
+  const [eventStatus, setEventStatus] = useState('DRAFT');
+  const [eventPriority, setEventPriority] = useState('MEDIUM');
+  const [eventStartDatetime, setEventStartDatetime] = useState('');
+  const [eventTimezone, setEventTimezone] = useState('Asia/Kolkata');
+  const [eventAllDay, setEventAllDay] = useState(false);
+  const [eventLocation, setEventLocation] = useState('');
+  const [eventMaxAttendees, setEventMaxAttendees] = useState('');
+  const [eventIsPublic, setEventIsPublic] = useState(false);
+  const [eventRequiresRegistration, setEventRequiresRegistration] = useState(false);
+  const [eventReminder, setEventReminder] = useState(true);
+
+  // Field-level validation error highlights
+  const [formErrors, setFormErrors] = useState({});
 
   const colorOptions = [
     { name: 'Indigo', value: 'bg-indigo-500' },
@@ -126,26 +145,45 @@ const CalendarPage = () => {
     const formattedH = h % 12 || 12;
     return `${formattedH}:${minutes} ${ampm}`;
   };
-
   // Event handlers
   const handleDayClick = (dateString) => {
     setSelectedDate(dateString);
     setSelectedEventId(null);
     setEventTitle('');
-    setEventStartTime('09:00');
-    setEventEndTime('10:00');
-    setEventColor('bg-indigo-500');
+    setEventDescription('');
+    setEventType('MEETING');
+    setEventStatus('DRAFT');
+    setEventPriority('MEDIUM');
+    setEventStartDatetime(`${dateString}T09:00`);
+    setEventTimezone('Asia/Kolkata');
+    setEventAllDay(false);
+    setEventLocation('');
+    setEventMaxAttendees('');
+    setEventIsPublic(false);
+    setEventRequiresRegistration(false);
+    setEventReminder(true);
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
   const handleEventClick = (e, event) => {
     e.stopPropagation(); // Don't trigger cell click
     setSelectedEventId(event.id);
-    setSelectedDate(event.date);
-    setEventTitle(event.title);
-    setEventStartTime(event.startTime || '09:00');
-    setEventEndTime(event.endTime || '10:00');
-    setEventColor(event.color);
+    setSelectedDate(event.date || (event.start_datetime ? event.start_datetime.split('T')[0] : ''));
+    setEventTitle(event.title || '');
+    setEventDescription(event.description || '');
+    setEventType(event.event_type || 'MEETING');
+    setEventStatus(event.status || 'PUBLISHED');
+    setEventPriority(event.priority || 'MEDIUM');
+    setEventStartDatetime(event.start_datetime ? event.start_datetime.substring(0, 16) : `${event.date}T${event.startTime || '09:00'}`);
+    setEventTimezone(event.timezone || 'Asia/Kolkata');
+    setEventAllDay(!!event.all_day);
+    setEventLocation(event.location || '');
+    setEventMaxAttendees(event.max_attendees || '');
+    setEventIsPublic(!!event.is_public);
+    setEventRequiresRegistration(!!event.requires_registration);
+    setEventReminder(event.reminder_enabled !== undefined ? !!event.reminder_enabled : true);
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
@@ -153,50 +191,139 @@ const CalendarPage = () => {
     setIsModalOpen(false);
     setSelectedEventId(null);
     setSelectedDate(null);
-    setEventTitle('');
+    setFormErrors({});
   };
 
-  const handleSaveEvent = (e) => {
+  const getIsoStringWithOffset = (localDtString, tzString) => {
+    if (!localDtString) return "";
+    const tzOffsets = {
+      "UTC": "+00:00",
+      "Asia/Kolkata": "+05:30",
+      "America/New_York": "-04:00",
+      "Europe/London": "+01:00",
+      "Asia/Dubai": "+04:00"
+    };
+    const offset = tzOffsets[tzString] || "+00:00";
+    return `${localDtString}:00${offset}`;
+  };
+
+  const handleSaveEvent = async (e) => {
     e.preventDefault();
-    if (!eventTitle.trim()) {
-      toast.error('Event title is required');
-      return;
-    }
-
-    if (eventStartTime >= eventEndTime) {
-      toast.error('End time must be after start time');
-      return;
-    }
-
-    if (selectedEventId) {
-      // Edit existing event
-      setEvents(events.map(ev => 
-        ev.id === selectedEventId 
-          ? { ...ev, title: eventTitle, date: selectedDate, startTime: eventStartTime, endTime: eventEndTime, color: eventColor } 
-          : ev
-      ));
-      toast.success('Event updated successfully!');
-    } else {
-      // Create new event
-      const newEvent = {
-        id: Date.now(),
-        title: eventTitle,
-        date: selectedDate,
-        startTime: eventStartTime,
-        endTime: eventEndTime,
-        color: eventColor
-      };
-      setEvents([...events, newEvent]);
-      toast.success('Event added successfully!');
-    }
     
-    closeEventModal();
+    // Front-end validations
+    const errors = {};
+    if (!eventTitle.trim()) errors.title = "Title is required";
+    if (!eventType) errors.event_type = "Event type is required";
+    if (!eventStatus) errors.status = "Status is required";
+    if (!eventPriority) errors.priority = "Priority is required";
+    if (!eventStartDatetime) errors.start_datetime = "Start Date & Time is required";
+    if (!eventTimezone) errors.timezone = "Timezone is required";
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    const payload = {
+      title: eventTitle.trim(),
+      description: eventDescription.trim() || null,
+      event_type: eventType,
+      status: eventStatus,
+      priority: eventPriority,
+      start_datetime: getIsoStringWithOffset(eventStartDatetime, eventTimezone),
+      timezone: eventTimezone,
+      all_day: eventAllDay,
+      location: eventLocation.trim() || null,
+      max_attendees: eventMaxAttendees ? parseInt(eventMaxAttendees, 10) : null,
+      is_public: eventIsPublic,
+      requires_registration: eventRequiresRegistration,
+      reminder_enabled: eventReminder
+    };
+
+    try {
+      if (selectedEventId) {
+        // Edit existing local event
+        setEvents(events.map(ev => 
+          ev.id === selectedEventId 
+            ? { 
+                ...ev, 
+                ...payload, 
+                date: eventStartDatetime.split('T')[0],
+                startTime: eventStartDatetime.split('T')[1]?.substring(0, 5) || '00:00',
+                color: payload.priority === 'URGENT' ? 'bg-red-500' :
+                       payload.priority === 'HIGH' ? 'bg-orange-500' :
+                       payload.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'
+              } 
+            : ev
+        ));
+        toast.success("Event updated successfully!");
+      } else {
+        // Create new event via API call
+        try {
+          const response = await axiosInstance.post('/events/', payload);
+          if (response.status === 201 || response.status === 200) {
+            toast.success("Event created successfully!");
+            const newLocalEvent = {
+              id: response.data.id || Date.now(),
+              ...payload,
+              date: eventStartDatetime.split('T')[0],
+              color: payload.priority === 'URGENT' ? 'bg-red-500' :
+                     payload.priority === 'HIGH' ? 'bg-orange-500' :
+                     payload.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'
+            };
+            setEvents([...events, newLocalEvent]);
+          }
+        } catch (apiError) {
+          if (apiError.response?.status === 403) {
+            const newLocalEvent = {
+              id: Date.now(),
+              ...payload,
+              date: eventStartDatetime.split('T')[0],
+              color: payload.priority === 'URGENT' ? 'bg-red-500' :
+                     payload.priority === 'HIGH' ? 'bg-orange-500' :
+                     payload.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'
+            };
+            setEvents([...events, newLocalEvent]);
+            toast.info("Event saved locally (your role is read-only on the backend).");
+          } else {
+            throw apiError;
+          }
+        }
+      }
+      closeEventModal();
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+        if (status === 401) {
+          toast.error("Session expired. Redirecting to login...");
+          navigate('/login');
+        } else if (status === 422) {
+          const apiErrors = {};
+          const details = error.response.data?.detail;
+          if (Array.isArray(details)) {
+            details.forEach(err => {
+              const fieldName = err.loc[err.loc.length - 1];
+              apiErrors[fieldName] = err.msg;
+            });
+          }
+          setFormErrors(apiErrors);
+          toast.error("Please fix validation errors in the form.");
+        } else if (status === 500) {
+          toast.error("Internal Server Error. Please try again later.");
+        } else {
+          toast.error(error.response.data?.message || "Failed to save event");
+        }
+      } else {
+        toast.error("Failed to connect to server");
+      }
+    }
   };
 
   const handleDeleteEvent = () => {
     if (!selectedEventId) return;
     setEvents(events.filter(ev => ev.id !== selectedEventId));
-    toast.success('Event deleted!');
+    toast.success("Event deleted!");
     closeEventModal();
   };
 
@@ -379,93 +506,313 @@ const CalendarPage = () => {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-white/10 w-full max-w-md rounded-2xl shadow-2xl relative z-10 overflow-hidden flex flex-col"
+              className="bg-white dark:bg-[#111827] border border-gray-100 dark:border-white/10 w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col my-8 max-h-[90vh]"
             >
-              <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {selectedEventId ? 'Edit Event' : 'Add Event'}
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 shrink-0">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <CalendarIcon className="w-5 h-5 text-indigo-500" />
+                  {selectedEventId ? 'Edit Event Details' : 'Create New Event'}
                 </h3>
                 <div className="flex items-center gap-2">
                   {selectedEventId && (
                     <button 
+                      type="button"
                       onClick={handleDeleteEvent}
-                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all"
                       title="Delete Event"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   )}
                   <button 
+                    type="button"
                     onClick={closeEventModal}
-                    className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10 rounded-lg transition-colors"
+                    className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10 rounded-xl transition-all"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
               </div>
               
-              <form onSubmit={handleSaveEvent} className="p-5 space-y-5">
-                <div>
-                  <input
-                    type="text"
-                    value={eventTitle}
-                    onChange={(e) => setEventTitle(e.target.value)}
-                    placeholder="Event title"
-                    className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border-none text-xl font-medium rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
-                    autoFocus
-                  />
-                </div>
-
-                <div className="flex flex-col gap-4 text-sm">
-                  <div className="flex items-center gap-4 text-gray-600 dark:text-gray-300">
-                    <CalendarIcon className="w-5 h-5" />
-                    <span className="font-medium">{selectedDate}</span>
-                  </div>
+              {/* Modal Body */}
+              <form onSubmit={handleSaveEvent} className="p-6 space-y-6 overflow-y-auto no-scrollbar flex-1">
+                {/* 2-Column Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   
-                  <div className="flex items-center gap-4 text-gray-600 dark:text-gray-300">
-                    <Clock className="w-5 h-5" />
-                    <div className="flex items-center gap-2">
-                      <TimeSelector 
-                        value={eventStartTime}
-                        onChange={setEventStartTime}
-                      />
-                      <span className="text-gray-400 font-medium px-2">to</span>
-                      <TimeSelector 
-                        value={eventEndTime}
-                        onChange={setEventEndTime}
-                      />
+                  {/* Row 1: Title (Full width) */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Title <span className="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      value={eventTitle}
+                      onChange={(e) => {
+                        setEventTitle(e.target.value);
+                        if (formErrors.title) setFormErrors({ ...formErrors, title: null });
+                      }}
+                      placeholder="e.g. Team Sync – Weekly Standup"
+                      className={`w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                        formErrors.title ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-white/10'
+                      }`}
+                    />
+                    {formErrors.title && <p className="mt-1 text-xs text-red-500 font-medium">{formErrors.title}</p>}
+                  </div>
+
+                  {/* Row 2: Event Type | Status */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Event Type <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <select
+                        value={eventType}
+                        onChange={(e) => setEventType(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow appearance-none cursor-pointer"
+                      >
+                        <option value="MEETING" className="bg-[#111827] text-white">Meeting</option>
+                        <option value="HOLIDAY" className="bg-[#111827] text-white">Holiday</option>
+                        <option value="TRAINING" className="bg-[#111827] text-white">Training</option>
+                        <option value="CONFERENCE" className="bg-[#111827] text-white">Conference</option>
+                        <option value="WORKSHOP" className="bg-[#111827] text-white">Workshop</option>
+                        <option value="SOCIAL" className="bg-[#111827] text-white">Social</option>
+                        <option value="OTHER" className="bg-[#111827] text-white">Other</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Event Color</label>
-                  <div className="flex items-center gap-3">
-                    {colorOptions.map((color) => (
-                      <button
-                        key={color.value}
-                        type="button"
-                        onClick={() => setEventColor(color.value)}
-                        className={`w-8 h-8 rounded-full ${color.value} ${eventColor === color.value ? 'ring-2 ring-offset-2 ring-indigo-500 dark:ring-offset-[#111827]' : ''} transition-all`}
-                        title={color.name}
-                      />
-                    ))}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Status <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <select
+                        value={eventStatus}
+                        onChange={(e) => setEventStatus(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow appearance-none cursor-pointer"
+                      >
+                        <option value="DRAFT" className="bg-[#111827] text-white">Draft</option>
+                        <option value="PUBLISHED" className="bg-[#111827] text-white">Published</option>
+                        <option value="CANCELLED" className="bg-[#111827] text-white">Cancelled</option>
+                        <option value="COMPLETED" className="bg-[#111827] text-white">Completed</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Row 3: Priority | Timezone */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Priority <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <select
+                        value={eventPriority}
+                        onChange={(e) => setEventPriority(e.target.value)}
+                        className="w-full pl-9 pr-10 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow appearance-none cursor-pointer font-medium"
+                      >
+                        <option value="LOW" className="bg-[#111827] text-white">Low</option>
+                        <option value="MEDIUM" className="bg-[#111827] text-white">Medium</option>
+                        <option value="HIGH" className="bg-[#111827] text-white">High</option>
+                        <option value="URGENT" className="bg-[#111827] text-white">Urgent</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center pointer-events-none">
+                        <span className={`w-2.5 h-2.5 rounded-full ring-2 ring-white dark:ring-[#111827] ${
+                          eventPriority === 'LOW' ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' :
+                          eventPriority === 'MEDIUM' ? 'bg-amber-500 shadow-sm shadow-amber-500/50' :
+                          eventPriority === 'HIGH' ? 'bg-orange-500 shadow-sm shadow-orange-500/50' :
+                          'bg-red-500 shadow-sm shadow-red-500/50'
+                        }`} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Timezone <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <select
+                        value={eventTimezone}
+                        onChange={(e) => setEventTimezone(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow appearance-none cursor-pointer"
+                      >
+                        <option value="Asia/Kolkata" className="bg-[#111827] text-white">Asia/Kolkata</option>
+                        <option value="UTC" className="bg-[#111827] text-white">UTC</option>
+                        <option value="America/New_York" className="bg-[#111827] text-white">America/New_York</option>
+                        <option value="Europe/London" className="bg-[#111827] text-white">Europe/London</option>
+                        <option value="Asia/Dubai" className="bg-[#111827] text-white">Asia/Dubai</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
+                        <ChevronDown className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 4: Start DateTime | All Day Toggle */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Start Date & Time <span className="text-red-500">*</span></label>
+                    {eventAllDay ? (
+                      <input
+                        type="date"
+                        value={eventStartDatetime ? eventStartDatetime.split('T')[0] : ''}
+                        onChange={(e) => {
+                          setEventStartDatetime(`${e.target.value}T00:00`);
+                          if (formErrors.start_datetime) setFormErrors({ ...formErrors, start_datetime: null });
+                        }}
+                        className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-[#0B0F19] border rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                          formErrors.start_datetime ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-white/10'
+                        }`}
+                      />
+                    ) : (
+                      <input
+                        type="datetime-local"
+                        value={eventStartDatetime}
+                        onChange={(e) => {
+                          setEventStartDatetime(e.target.value);
+                          if (formErrors.start_datetime) setFormErrors({ ...formErrors, start_datetime: null });
+                        }}
+                        className={`w-full px-4 py-2.5 bg-gray-50 dark:bg-[#0B0F19] border rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all ${
+                          formErrors.start_datetime ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 dark:border-white/10'
+                        }`}
+                      />
+                    )}
+                    {formErrors.start_datetime && <p className="mt-1 text-xs text-red-500 font-medium">{formErrors.start_datetime}</p>}
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5 rounded-2xl h-full self-end">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">All Day</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">Hide hours and set event to full day</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEventAllDay(!eventAllDay)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        eventAllDay ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          eventAllDay ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Row 5: Location (Full width) */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Location</label>
+                    <input
+                      type="text"
+                      value={eventLocation}
+                      onChange={(e) => setEventLocation(e.target.value)}
+                      placeholder="e.g. Conference Room A, Zoom link, etc."
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
+                    />
+                  </div>
+
+                  {/* Row 6: Max Attendees | Is Public Toggle */}
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Max Attendees</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={eventMaxAttendees}
+                      onChange={(e) => setEventMaxAttendees(e.target.value)}
+                      placeholder="e.g. 20 (leave blank for unlimited)"
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5 rounded-2xl">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Make this event public</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">Allow guests outside the workspace to view</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEventIsPublic(!eventIsPublic)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        eventIsPublic ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          eventIsPublic ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Row 7: Requires Registration toggle | Reminder toggle */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5 rounded-2xl">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Require attendee registration</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">Attendees must sign up to join</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEventRequiresRegistration(!eventRequiresRegistration)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        eventRequiresRegistration ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          eventRequiresRegistration ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-gray-50/50 dark:bg-white/[0.02] border border-gray-100 dark:border-white/5 rounded-2xl">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Enable reminder notification</span>
+                      <span className="text-xs text-gray-400 dark:text-gray-500">Alert attendees prior to standard start</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEventReminder(!eventReminder)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        eventReminder ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          eventReminder ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Row 8: Description (Full width textarea) */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Description</label>
+                    <textarea
+                      rows="4"
+                      value={eventDescription}
+                      onChange={(e) => setEventDescription(e.target.value)}
+                      placeholder="Add a brief description..."
+                      className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow resize-none"
+                    />
+                  </div>
+
                 </div>
 
-                <div className="pt-2 flex justify-end gap-3">
+                {/* Footer Buttons */}
+                <div className="pt-4 border-t border-gray-100 dark:border-white/10 flex justify-end gap-3 shrink-0">
                   <button
                     type="button"
                     onClick={closeEventModal}
-                    className="px-4 py-2.5 bg-gray-100 dark:bg-white/5 hover:bg-gray-200 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-colors"
+                    className="px-5 py-3 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-md transition-colors"
+                    className="px-7 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    {selectedEventId ? 'Save Changes' : 'Save Event'}
+                    {selectedEventId ? 'Save Changes' : 'Create Event'}
                   </button>
                 </div>
               </form>
