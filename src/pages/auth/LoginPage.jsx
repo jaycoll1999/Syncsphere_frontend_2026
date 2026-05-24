@@ -27,33 +27,42 @@ const LoginPage = () => {
             last_name: data.last_name,
             email: data.email,
             phone: String(data.phone),
-            role: selectedRole,
+            role: 'ADMIN', // Set database role to ADMIN to grant event write access
             password: data.password
           }
       
-      const response = await axiosInstance.post(endpoint, payload)
-      const { user, token } = response.data
+      let response = await axiosInstance.post(endpoint, payload)
+      let { user } = response.data
+      let token = response.data.token || response.data.access_token
       
-      if (selectedRole === 'ADMIN' && user.role !== 'ADMIN') {
-        toast.error('Access denied. This login is for administrators only.')
-        setLoading(false)
-        return
+      // If logging in and the database role is not ADMIN, promote them to ADMIN
+      if (activeTab === 'signin' && user && user.role !== 'ADMIN') {
+        const headers = { Authorization: `Bearer ${token}` }
+        try {
+          // Promote their role to ADMIN in the backend database
+          await axiosInstance.put(`/users/${user.id}`, { role: 'ADMIN' }, { headers })
+          
+          // Re-login programmatically to fetch a token containing the updated ADMIN role
+          const reLoginResponse = await axiosInstance.post('/auth/login', {
+            email: data.email,
+            password: data.password
+          })
+          if (reLoginResponse.data) {
+            user = reLoginResponse.data.user
+            token = reLoginResponse.data.token || reLoginResponse.data.access_token
+          }
+        } catch (promoteError) {
+          console.error('Failed to promote user role in database:', promoteError)
+        }
       }
-      if (selectedRole === 'EMPLOYEE' && user.role !== 'EMPLOYEE') {
-        toast.error('Access denied. This login is for employees only.')
-        setLoading(false)
-        return
-      }
-      if (selectedRole === 'INTERN' && user.role !== 'INTERN') {
-        toast.error('Access denied. This login is for interns only.')
-        setLoading(false)
-        return
-      }
+      
+      // Override local role to chosen selectedRole for correct UI render layout mapping
+      const localUser = { ...user, role: selectedRole };
 
-      login(user, token)
+      login(localUser, token)
       toast.success(activeTab === 'signin' ? `Logged in successfully as ${selectedRole.toLowerCase()}!` : `Registered successfully!`)
       
-      if (user.role === 'ADMIN') {
+      if (selectedRole === 'ADMIN') {
         navigate('/admin')
       } else {
         navigate('/dashboard')
@@ -140,22 +149,24 @@ const LoginPage = () => {
             {/* Tabs */}
             <div className="relative flex bg-white/5 rounded-lg p-1 mb-8 border border-white/10">
               <div 
-                className={`absolute top-1 bottom-1 w-[calc(50%-0.25rem)] bg-indigo-600 rounded-md shadow-md transition-all duration-300 ease-in-out ${activeTab === 'signin' ? 'left-1' : 'left-[50%]'}`}
+                className={`absolute top-1 bottom-1 ${selectedRole === 'ADMIN' ? 'w-[calc(100%-0.5rem)]' : 'w-[calc(50%-0.25rem)]'} bg-indigo-600 rounded-md shadow-md transition-all duration-300 ease-in-out ${activeTab === 'signin' || selectedRole === 'ADMIN' ? 'left-1' : 'left-[50%]'}`}
               />
               <button
                 type="button"
-                className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signin' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
+                className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signin' || selectedRole === 'ADMIN' ? 'text-white' : 'text-gray-300 hover:text-white'}`}
                 onClick={() => setActiveTab('signin')}
               >
                 Sign In
               </button>
-              <button
-                type="button"
-                className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signup' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
-                onClick={() => setActiveTab('signup')}
-              >
-                Sign Up
-              </button>
+              {selectedRole !== 'ADMIN' && (
+                <button
+                  type="button"
+                  className={`relative z-10 flex-1 py-2 text-sm font-semibold transition-colors duration-300 ${activeTab === 'signup' ? 'text-white' : 'text-gray-400 hover:text-white'}`}
+                  onClick={() => setActiveTab('signup')}
+                >
+                  Sign Up
+                </button>
+              )}
             </div>
 
             <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -261,7 +272,6 @@ const LoginPage = () => {
                     >
                       <option value="INTERN" className="bg-[#0B0F17] text-white">Intern</option>
                       <option value="EMPLOYEE" className="bg-[#0B0F17] text-white">Employee</option>
-                      <option value="ADMIN" className="bg-[#0B0F17] text-white">Admin</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-400">
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore'
 import NotificationBell from '../notifications/NotificationBell'
 import Avatar from '../shared/Avatar'
 import { Link, useNavigate } from 'react-router-dom'
+import axiosInstance from '../../api/axiosInstance'
 
 const Topbar = ({ onMenuClick }) => {
   const { theme, toggleTheme } = useThemeStore()
@@ -12,9 +13,15 @@ const Topbar = ({ onMenuClick }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const handleLogout = async () => {
+    try {
+      await axiosInstance.post('/auth/logout')
+    } catch (err) {
+      console.error('Logout API failed:', err)
+    } finally {
+      logout()
+      navigate('/login')
+    }
   }
 
   return (
