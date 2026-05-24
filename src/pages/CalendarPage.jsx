@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
@@ -35,13 +35,56 @@ const CalendarPage = () => {
     { id: 'h17', title: "Christmas Day", date: `${currentYear}-12-25`, startTime: '00:00', endTime: '23:59', color: 'bg-amber-500' },
   ];
 
-  // Mock Events State (now includes startTime and endTime)
-  const [events, setEvents] = useState([
-    { id: 1, title: 'Team Sync', date: new Date(today.getFullYear(), today.getMonth(), 15).toISOString().split('T')[0], startTime: '10:00', endTime: '11:00', color: 'bg-blue-500' },
-    { id: 2, title: 'Project Deadline', date: new Date(today.getFullYear(), today.getMonth(), 22).toISOString().split('T')[0], startTime: '15:00', endTime: '16:00', color: 'bg-red-500' },
-    { id: 3, title: 'Client Meeting', date: new Date(today.getFullYear(), today.getMonth(), 8).toISOString().split('T')[0], startTime: '13:30', endTime: '14:30', color: 'bg-emerald-500' },
-    ...initialHolidays
-  ]);
+  // Events State (initialized with holidays)
+  const [events, setEvents] = useState([...initialHolidays]);
+
+  useEffect(() => {
+    const fetchBackendEvents = async () => {
+      try {
+        const response = await axiosInstance.get('/events/');
+        const backendEvents = response.data || [];
+        
+        const mappedBackendEvents = backendEvents.map(ev => {
+          const dateStr = ev.start_datetime.split('T')[0];
+          const startTime = ev.start_datetime.split('T')[1]?.substring(0, 5) || '09:00';
+          const endDt = ev.end_datetime ? ev.end_datetime : new Date(new Date(ev.start_datetime).getTime() + 3600000).toISOString();
+          const endTime = endDt.split('T')[1]?.substring(0, 5) || '10:00';
+          
+          const color = ev.priority === 'URGENT' ? 'bg-red-500' :
+                        ev.priority === 'HIGH' ? 'bg-orange-500' :
+                        ev.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500';
+
+          return {
+            id: ev.id,
+            uuid: ev.uuid,
+            title: ev.title,
+            description: ev.description,
+            event_type: ev.event_type,
+            status: ev.status,
+            priority: ev.priority,
+            start_datetime: ev.start_datetime,
+            timezone: ev.timezone,
+            all_day: !!ev.all_day,
+            location: ev.location,
+            max_attendees: ev.max_attendees,
+            is_public: !!ev.is_public,
+            requires_registration: !!ev.requires_registration,
+            reminder_enabled: !!ev.reminder_enabled,
+            date: dateStr,
+            startTime: startTime,
+            endTime: endTime,
+            color: color
+          };
+        });
+
+        setEvents([...initialHolidays, ...mappedBackendEvents]);
+      } catch (err) {
+        console.error('Failed to fetch events in CalendarPage:', err);
+      }
+    };
+
+    fetchBackendEvents();
+  }, []);
 
   const navigate = useNavigate();
 
@@ -268,6 +311,8 @@ const CalendarPage = () => {
               id: response.data.id || Date.now(),
               ...payload,
               date: eventStartDatetime.split('T')[0],
+              startTime: eventStartDatetime.split('T')[1]?.substring(0, 5) || '09:00',
+              endTime: '23:59',
               color: payload.priority === 'URGENT' ? 'bg-red-500' :
                      payload.priority === 'HIGH' ? 'bg-orange-500' :
                      payload.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'
@@ -280,6 +325,8 @@ const CalendarPage = () => {
               id: Date.now(),
               ...payload,
               date: eventStartDatetime.split('T')[0],
+              startTime: eventStartDatetime.split('T')[1]?.substring(0, 5) || '09:00',
+              endTime: '23:59',
               color: payload.priority === 'URGENT' ? 'bg-red-500' :
                      payload.priority === 'HIGH' ? 'bg-orange-500' :
                      payload.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'
