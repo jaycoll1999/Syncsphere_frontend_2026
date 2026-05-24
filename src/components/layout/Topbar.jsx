@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore'
 import NotificationBell from '../notifications/NotificationBell'
 import Avatar from '../shared/Avatar'
 import { Link, useNavigate } from 'react-router-dom'
+import axiosInstance from '../../api/axiosInstance'
 
 const Topbar = ({ onMenuClick }) => {
   const { theme, toggleTheme } = useThemeStore()
@@ -12,9 +13,45 @@ const Topbar = ({ onMenuClick }) => {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false)
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const fullName = user?.first_name || user?.last_name
+    ? [user?.first_name, user?.last_name].filter(Boolean).join(' ')
+    : (user?.name || 'User')
+
+  const handleLogout = async () => {
+    try {
+      // Retrieve the stored refresh token to send with the logout API call
+      let currentRefreshToken = localStorage.getItem('refreshToken')
+      if (!currentRefreshToken) {
+        const storedAuth = localStorage.getItem('auth-storage')
+        if (storedAuth) {
+          try {
+            currentRefreshToken = JSON.parse(storedAuth)?.state?.refreshToken
+          } catch (e) {}
+        }
+      }
+      if (!currentRefreshToken) {
+        currentRefreshToken = useAuthStore.getState().refreshToken
+      }
+
+      console.log('[Topbar Logout] Performing API logout with Refresh Token:', currentRefreshToken ? `${currentRefreshToken.substring(0, 15)}...` : 'NONE')
+
+      // Perform the POST /auth/logout call sending the refresh token in the body
+      await axiosInstance.post('/auth/logout', {
+        refresh_token: currentRefreshToken,
+        refreshToken: currentRefreshToken
+      }, {
+        headers: {
+          'X-Refresh-Token': currentRefreshToken
+        }
+      })
+      console.log('[Topbar Logout] API logout request completed successfully.')
+    } catch (err) {
+      console.error('[Topbar Logout] API logout request failed:', err.response?.data || err.message)
+    } finally {
+      // Guarantee local state cleanup and navigation to login page
+      logout()
+      navigate('/login')
+    }
   }
 
   return (
@@ -60,7 +97,7 @@ const Topbar = ({ onMenuClick }) => {
           {isUserDropdownOpen && (
             <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700 z-50">
               <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.name || 'User'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{fullName}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
               </div>
               <div className="py-1">

@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react'
-import { 
-  User, 
-  Lock, 
-  Settings, 
-  Activity, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Briefcase, 
-  Camera, 
-  Check, 
-  Shield, 
-  Clock, 
+import {
+  User,
+  Lock,
+  Settings,
+  Activity,
+  Mail,
+  Phone,
+  MapPin,
+  Briefcase,
+  Camera,
+  Check,
+  Shield,
+  Clock,
   Bell,
   Globe,
   Save,
@@ -97,14 +97,14 @@ const ProfilePage = () => {
           setLastName(userData.last_name || '')
           setEmail(userData.email || '')
           setPhone(userData.phone || '')
-          
+
           // Save and synchronize back to global persisted auth store
-          updateUser({ 
-            first_name: userData.first_name, 
-            last_name: userData.last_name, 
-            email: userData.email, 
-            phone: userData.phone, 
-            role: userData.role 
+          updateUser({
+            first_name: userData.first_name,
+            last_name: userData.last_name,
+            email: userData.email,
+            phone: userData.phone,
+            role: userData.role
           })
         }
       } catch (err) {
@@ -137,7 +137,7 @@ const ProfilePage = () => {
       toast.error('First name and Last name are required!')
       return
     }
-    
+
     setIsSaving(true)
     setTimeout(() => {
       updateUser({
@@ -209,23 +209,23 @@ const ProfilePage = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-1 flex flex-col gap-6 text-gray-900 dark:text-gray-100 animate-in fade-in duration-200">
-      
+
       {/* Loading Overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
           <Loader2 className="h-10 w-10 animate-spin text-indigo-600" />
         </div>
       )}
-      
+
       {/* 1. HEADER BANNER CARD */}
       <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
         {/* Banner Gradient */}
         <div className="h-32 md:h-44 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 relative" />
-        
+
         {/* Profile Info Overlay Card */}
         <div className="p-6 pt-0 flex flex-col md:flex-row items-center md:items-end justify-between gap-6 -mt-16 md:-mt-20 relative">
           <div className="flex flex-col md:flex-row items-center md:items-end gap-4 text-center md:text-left">
-            
+
             {/* Large Avatar container */}
             <div className="relative group">
               <div className="h-28 w-28 md:h-36 md:w-36 rounded-3xl bg-indigo-600 text-white flex items-center justify-center text-3xl md:text-4xl font-black border-4 border-white dark:border-gray-800 shadow-md">
@@ -237,7 +237,7 @@ const ProfilePage = () => {
             </div>
 
             {/* Profile labels */}
-            <div className="md:mb-3">
+            <div className="md:mb-1 pt-1">
               <div className="flex flex-col md:flex-row items-center gap-2">
                 <h1 className="text-2xl md:text-3xl font-black text-gray-900 dark:text-white leading-tight font-sans">
                   {fullName}
@@ -260,52 +260,48 @@ const ProfilePage = () => {
 
       {/* 2. BODY LAYOUT: TABS SIDEBAR + CONTENT CARD */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
-        
+
         {/* Navigation Tabs List */}
         <div className="w-full lg:w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl p-4 shadow-sm flex flex-col gap-1.5 flex-shrink-0">
           <button
             onClick={() => setActiveTab('details')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-all ${
-              activeTab === 'details'
-                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-            }`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'details'
+              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              }`}
           >
             <User className="h-5 w-5" />
             <span>Profile Details</span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab('security')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-all ${
-              activeTab === 'security'
-                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-            }`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'security'
+              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              }`}
           >
             <Lock className="h-5 w-5" />
             <span>Security & Pass</span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab('preferences')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-all ${
-              activeTab === 'preferences'
-                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-            }`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'preferences'
+              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              }`}
           >
             <Settings className="h-5 w-5" />
             <span>Preferences</span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab('activity')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-all ${
-              activeTab === 'activity'
-                ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-            }`}
+            className={`flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold uppercase tracking-wider transition-all ${activeTab === 'activity'
+              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+              }`}
           >
             <Activity className="h-5 w-5" />
             <span>Activity Log</span>
@@ -314,7 +310,7 @@ const ProfilePage = () => {
 
         {/* Dynamic Details Content Card */}
         <div className="flex-1 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-3xl shadow-sm overflow-hidden">
-          
+
           {/* A. DETAILS TAB */}
           {activeTab === 'details' && (
             <form onSubmit={handleProfileUpdate} className="p-6 md:p-8 flex flex-col gap-6">
@@ -577,14 +573,12 @@ const ProfilePage = () => {
                   <button
                     type="button"
                     onClick={toggleTheme}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      theme === 'dark' ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${theme === 'dark' ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
-                      }`}
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'
+                        }`}
                     />
                   </button>
                 </div>
@@ -596,7 +590,7 @@ const ProfilePage = () => {
                   <Bell className="h-4 w-4" />
                   <span>Subscribed Notifications Settings</span>
                 </h4>
-                
+
                 <div className="flex items-center justify-between p-2">
                   <div>
                     <span className="text-sm font-bold text-gray-800 dark:text-gray-200 block">Primary Email Notifications</span>
@@ -605,14 +599,12 @@ const ProfilePage = () => {
                   <button
                     type="button"
                     onClick={() => setEmailNotifs(!emailNotifs)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      emailNotifs ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${emailNotifs ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        emailNotifs ? 'translate-x-5' : 'translate-x-0'
-                      }`}
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${emailNotifs ? 'translate-x-5' : 'translate-x-0'
+                        }`}
                     />
                   </button>
                 </div>
@@ -625,14 +617,12 @@ const ProfilePage = () => {
                   <button
                     type="button"
                     onClick={() => setPushNotifs(!pushNotifs)}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                      pushNotifs ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${pushNotifs ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                        pushNotifs ? 'translate-x-5' : 'translate-x-0'
-                      }`}
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${pushNotifs ? 'translate-x-5' : 'translate-x-0'
+                        }`}
                     />
                   </button>
                 </div>
@@ -677,7 +667,7 @@ const ProfilePage = () => {
                 {activityLogs.map((log) => {
                   return (
                     <div key={log.id} className="relative group">
-                      
+
                       {/* Interactive dot */}
                       <span className="absolute -left-[31px] top-1.5 h-4 w-4 rounded-full border-2 border-indigo-600 bg-white dark:bg-gray-800 flex items-center justify-center transition-all group-hover:scale-125 duration-150">
                         <span className="h-1.5 w-1.5 bg-indigo-600 rounded-full" />
