@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import axiosInstance from '../../api/axiosInstance'
 import { toast } from 'react-toastify'
-import { Eye, EyeOff, User, Shield, CheckCircle2 } from 'lucide-react'
+import { Eye, EyeOff, User, Shield, CheckCircle2, Settings } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 const LoginPage = () => {
@@ -15,34 +15,15 @@ const LoginPage = () => {
   const navigate = useNavigate()
   const { login } = useAuthStore()
   const [loading, setLoading] = useState(false)
+  const [showConfigModal, setShowConfigModal] = useState(false)
+  const [backendIp, setBackendIp] = useState(() => {
+    return localStorage.getItem('VITE_BACKEND_IP') || '192.168.1.42:8000'
+  })
 
   const onSubmit = async (data) => {
     setLoading(true)
+    console.log('--- Auth Form Submission ---');
     try {
-      // Handle mock admin login for development
-      if (selectedRole === 'admin' && activeTab === 'signin') {
-        if (data.email === 'admin@gmail.com' && data.password === 'admin@123') {
-          const mockUser = {
-            id: 1,
-            email: 'admin@gmail.com',
-            name: 'Admin User',
-            role: 'ADMIN'
-          }
-          const mockToken = 'mock-admin-token-' + Date.now()
-          
-          login(mockUser, mockToken)
-          toast.success('Logged in successfully as admin!')
-          navigate('/admin')
-          setLoading(false)
-          return
-        } else {
-          toast.error('Invalid admin credentials. Use admin@gmail.com / admin@123')
-          setLoading(false)
-          return
-        }
-      }
-
-      // Regular API call for user/employee login
       const endpoint = activeTab === 'signin' ? '/auth/login' : '/auth/register'
       const payload = activeTab === 'signin' 
         ? { email: data.email, password: data.password }
@@ -51,14 +32,47 @@ const LoginPage = () => {
             last_name: data.last_name,
             email: data.email,
             phone: String(data.phone),
-            role: selectedRole,
+            role: selectedRole.toUpperCase(),
             password: data.password
           }
       
-      const response = await axiosInstance.post(endpoint, payload)
-      const { user, token } = response.data
+      console.log(`Hitting API Endpoint: ${endpoint}`);
+      console.log('Request Payload:', payload);
       
-      if (selectedRole === 'ADMIN' && user.role !== 'ADMIN') {
+      const response = await axiosInstance.post(endpoint, payload)
+      console.log('API Response Success:', response.data);
+      
+      const responseData = response.data
+      
+      // Dynamically extract token (supports flat, nested, and accessToken formats)
+      const token = responseData.token || 
+                    responseData.accessToken || 
+                    responseData.data?.token || 
+                    responseData.data?.accessToken
+      
+      // Dynamically extract user (supports flat and nested formats)
+      let user = responseData.user || responseData.data?.user
+      if (!user && (responseData.email || responseData.data?.email)) {
+        const source = responseData.email ? responseData : responseData.data
+        user = {
+          id: source.id || source._id,
+          email: source.email,
+          first_name: source.first_name,
+          last_name: source.last_name,
+          phone: source.phone,
+          name: source.name || [source.first_name, source.last_name].filter(Boolean).join(' '),
+          role: source.role
+        }
+      } else if (user) {
+        user.first_name = user.first_name || user.name?.split(' ')[0] || ''
+        user.last_name = user.last_name || user.name?.split(' ').slice(1).join(' ') || ''
+      }
+      
+      const userRole = user?.role || ''
+      const isRoleAdmin = userRole.toUpperCase() === 'ADMIN'
+      
+      if (selectedRole.toUpperCase() === 'ADMIN' && !isRoleAdmin) {
+        console.warn('Role Mismatch: Expected ADMIN but got', userRole);
         toast.error('Access denied. This login is for administrators only.')
         setLoading(false)
         return
@@ -77,12 +91,13 @@ const LoginPage = () => {
       login(user, token)
       toast.success(activeTab === 'signin' ? `Logged in successfully as ${selectedRole.toLowerCase()}!` : `Registered successfully!`)
       
-      if (user.role === 'ADMIN') {
+      if (isRoleAdmin) {
         navigate('/admin')
       } else {
         navigate('/dashboard')
       }
     } catch (error) {
+      console.error('API Response Error:', error.response?.data || error.message);
       toast.error(error.response?.data?.message || 'Authentication failed')
     } finally {
       setLoading(false)
@@ -364,6 +379,64 @@ const LoginPage = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Dynamic Backend IP Gear Button in top-right */}
+      <button 
+        type="button"
+        onClick={() => setShowConfigModal(true)}
+        className="absolute top-6 right-6 z-50 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full border border-white/25 shadow-lg transition-all duration-300 hover:rotate-45"
+        title="Configure Backend Connection"
+      >
+        <Settings className="h-5 w-5 text-white" />
+      </button>
+
+      {/* Backend Target IP Config Modal */}
+      {showConfigModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl relative animate-in zoom-in duration-150 text-left">
+            <h3 className="text-lg font-black text-white flex items-center gap-2">
+              <Settings className="h-5 w-5 text-indigo-500 animate-spin-slow" />
+              Backend Connection Settings
+            </h3>
+            <p className="text-xs text-gray-400 mt-2 font-medium">
+              Configure the dynamic local network IP of your backend server device. This completely prevents bad gateway/502 errors when your IP changes.
+            </p>
+            
+            <div className="mt-4 flex flex-col gap-1.5">
+              <label className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-400">Backend Host & Port</label>
+              <input
+                type="text"
+                value={backendIp}
+                onChange={(e) => setBackendIp(e.target.value)}
+                className="w-full px-4 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                placeholder="e.g. 192.168.1.42:8000"
+              />
+            </div>
+            
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowConfigModal(false)}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-bold uppercase rounded-xl transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.setItem('VITE_BACKEND_IP', backendIp)
+                  setShowConfigModal(false)
+                  toast.success(`Dynamic Backend IP updated to: http://${backendIp}`)
+                  setTimeout(() => window.location.reload(), 500)
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold uppercase rounded-xl shadow-lg shadow-indigo-600/30 transition-all"
+              >
+                Apply & Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

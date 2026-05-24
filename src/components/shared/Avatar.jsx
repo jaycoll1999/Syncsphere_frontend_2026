@@ -7,17 +7,17 @@ const Avatar = ({ user, size = 'md' }) => {
     lg: 'h-16 w-16 text-xl',
   }
 
-  const getInitials = (name) => {
-    if (!name) return '?'
-    const parts = name.split(' ')
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+  const getInitials = (userObj) => {
+    const emailStr = userObj?.email || ''
+    if (emailStr) {
+      return emailStr[0].toUpperCase()
     }
-    return parts[0][0].toUpperCase()
+    const nameStr = userObj?.name || userObj?.fullName || 'U'
+    return nameStr[0].toUpperCase()
   }
 
   const name = user?.name || user?.fullName || 'User'
-  const initials = getInitials(name)
+  const initials = getInitials(user)
 
   if (user?.photoUrl || user?.avatar) {
     return (

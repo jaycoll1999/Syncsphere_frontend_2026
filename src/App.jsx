@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css'
 import developerLogo from './assets/developer-logo.png'
 
 // Guards
-import { ProtectedRoute, PublicRoute, AdminRoute } from './utils/roleGuard.jsx'
+import { ProtectedRoute, PublicRoute, AdminRoute, RoleBasedRedirect } from './utils/roleGuard.jsx'
 
 // Layout
 import Layout from './components/layout/Layout'
@@ -57,7 +57,7 @@ function App() {
 
         {/* Protected Routes */}
         <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route index element={<RoleBasedRedirect />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="team" element={<TeamOverviewPage />} />
@@ -118,7 +118,6 @@ function App() {
         </div>
       </div>
       {/* -------------------------------- */}
-
     </BrowserRouter>
   )
 }

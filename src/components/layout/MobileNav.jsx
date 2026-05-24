@@ -1,10 +1,16 @@
 import React from 'react'
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, CalendarDays, FileText, User } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, FileText, User, Shield } from 'lucide-react'
+import { useAuthStore } from '../../store/authStore'
 
 const MobileNav = () => {
+  const { user } = useAuthStore()
+  const isAdmin = user?.role?.toUpperCase() === 'ADMIN'
+
   const links = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    isAdmin
+      ? { icon: Shield, label: 'Admin', path: '/admin' }
+      : { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: CalendarDays, label: 'Calendar', path: '/calendar' },
     { icon: FileText, label: 'Leave', path: '/leave' },
     { icon: User, label: 'Profile', path: '/profile' },

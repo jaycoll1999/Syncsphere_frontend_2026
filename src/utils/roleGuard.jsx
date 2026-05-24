@@ -11,11 +11,19 @@ export const ProtectedRoute = ({ children }) => {
 }
 
 export const PublicRoute = ({ children }) => {
-  const { isAuthenticated } = useAuthStore()
+  const { user, isAuthenticated } = useAuthStore()
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+    const isRoleAdmin = user?.role?.toUpperCase() === 'ADMIN'
+    return <Navigate to={isRoleAdmin ? '/admin' : '/dashboard'} replace />
   }
   return children
+}
+
+export const RoleBasedRedirect = () => {
+  const { user, isAuthenticated } = useAuthStore()
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  const isRoleAdmin = user?.role?.toUpperCase() === 'ADMIN'
+  return <Navigate to={isRoleAdmin ? '/admin' : '/dashboard'} replace />
 }
 
 export const AdminRoute = ({ children }) => {
@@ -23,7 +31,8 @@ export const AdminRoute = ({ children }) => {
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
-  if (user?.role !== 'ADMIN') {
+  const isRoleAdmin = user?.role?.toUpperCase() === 'ADMIN'
+  if (!isRoleAdmin) {
     return <Navigate to="/dashboard" replace />
   }
   return children
