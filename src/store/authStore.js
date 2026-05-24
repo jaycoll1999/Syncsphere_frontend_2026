@@ -7,9 +7,10 @@ export const useAuthStore = create(
       user: null,
       token: null,
       isAuthenticated: false,
-      login: (user, token) => set({ user, token, isAuthenticated: true }),
+      loginTime: null,
+      login: (user, token) => set({ user, token, isAuthenticated: true, loginTime: new Date().toISOString() }),
       logout: () => {
-        set({ user: null, token: null, isAuthenticated: false })
+        set({ user: null, token: null, isAuthenticated: false, loginTime: null })
         localStorage.removeItem('auth-storage') // Clear storage on logout
       },
       updateUser: (data) => set((state) => ({ user: { ...state.user, ...data } })),
@@ -19,7 +20,8 @@ export const useAuthStore = create(
       partialize: (state) => ({ 
         token: state.token,
         user: state.user,
-        isAuthenticated: state.isAuthenticated
+        isAuthenticated: state.isAuthenticated,
+        loginTime: state.loginTime
       }),
     }
   )

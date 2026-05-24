@@ -1,26 +1,95 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calendar as CalendarIcon, Clock, User, Shield, 
   Search, Filter, CheckCircle, PlayCircle, History,
   MoreHorizontal
 } from 'lucide-react';
+import axiosInstance from '../api/axiosInstance';
 
 const EventsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All');
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock Event Records Database
-  const eventsDatabase = [
-    { id: 1, title: 'Design System Review', date: 'Today', exactDate: '2026-05-17', time: '11:00 AM - 12:00 PM', addedBy: 'Sarah Chen', role: 'Lead Designer', status: 'Live', color: 'bg-emerald-500' },
-    { id: 2, title: 'Q3 Roadmapping', date: 'Tomorrow', exactDate: '2026-05-18', time: '02:00 PM - 04:00 PM', addedBy: 'Jessica Alba', role: 'Product Manager', status: 'Upcoming', color: 'bg-blue-500' },
-    { id: 3, title: 'Weekly Engineering Sync', date: 'Next Week', exactDate: '2026-05-22', time: '10:00 AM - 11:00 AM', addedBy: 'Alex Morgan', role: 'Admin', status: 'Upcoming', color: 'bg-indigo-500' },
-    { id: 4, title: 'Client Onboarding', date: 'Last Week', exactDate: '2026-05-10', time: '01:00 PM - 02:30 PM', addedBy: 'Michael Ross', role: 'Account Exec', status: 'Completed', color: 'bg-gray-500' },
-    { id: 5, title: 'Server Maintenance', date: 'Last Month', exactDate: '2026-04-28', time: '12:00 AM - 03:00 AM', addedBy: 'System', role: 'Automated', status: 'Completed', color: 'bg-amber-500' },
-    { id: 6, title: 'Marketing Campaign Launch', date: 'In 2 Weeks', exactDate: '2026-06-01', time: '09:00 AM - 10:00 AM', addedBy: 'Alex Morgan', role: 'Admin', status: 'Upcoming', color: 'bg-purple-500' },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        // Fetch both events and users in parallel
+        const [eventsRes, usersRes] = await Promise.all([
+          axiosInstance.get('/events/'),
+          axiosInstance.get('/users/')
+        ]);
+        
+        const usersList = usersRes.data || [];
+        const usersMap = {};
+        usersList.forEach(u => {
+          usersMap[u.id] = {
+            name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
+            role: u.role === 'ADMIN' ? 'Admin' : u.role === 'EMPLOYEE' ? 'Employee' : 'Intern'
+          };
+        });
 
-  const filteredEvents = eventsDatabase.filter(event => {
+        const rawEvents = eventsRes.data || [];
+        const now = new Date();
+
+        const mappedEvents = rawEvents.map(ev => {
+          const start = new Date(ev.start_datetime);
+          const end = ev.end_datetime ? new Date(ev.end_datetime) : new Date(start.getTime() + 3600000);
+          
+          let displayStatus = 'Upcoming';
+          if (ev.status === 'CANCELLED') {
+            displayStatus = 'Completed';
+          } else if (now >= start && now <= end) {
+            displayStatus = 'Live';
+          } else if (now > end) {
+            displayStatus = 'Completed';
+          } else {
+            displayStatus = 'Upcoming';
+          }
+
+          const formatTimeStr = (dateObj) => {
+            return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          };
+
+          const exactDate = ev.start_datetime.split('T')[0];
+          const readableDate = start.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+
+          const creator = usersMap[ev.creator_id] || { name: 'SyncSphere Member', role: 'Member' };
+
+          const color = ev.priority === 'URGENT' ? 'bg-red-500' :
+                        ev.priority === 'HIGH' ? 'bg-orange-500' :
+                        ev.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500';
+
+          return {
+            id: ev.id,
+            title: ev.title,
+            date: readableDate,
+            exactDate: exactDate,
+            time: `${formatTimeStr(start)} - ${formatTimeStr(end)}`,
+            addedBy: creator.name,
+            role: creator.role,
+            status: displayStatus,
+            color: color
+          };
+        });
+
+        // Sort events so latest start date is at the top
+        mappedEvents.sort((a, b) => new Date(b.exactDate) - new Date(a.exactDate));
+        setEvents(mappedEvents);
+      } catch (err) {
+        console.error('Failed to fetch events or users:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const filteredEvents = events.filter(event => {
     const matchesSearch = event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           event.addedBy.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = activeTab === 'All' || event.status === activeTab;
@@ -127,7 +196,16 @@ const EventsPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                {filteredEvents.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="5" className="py-12 text-center text-gray-500 dark:text-gray-400">
+                      <div className="flex flex-col items-center justify-center gap-3">
+                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm font-semibold">Fetching master ledger events...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredEvents.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="py-12 text-center text-gray-500 dark:text-gray-400">
                       No events found matching your criteria.

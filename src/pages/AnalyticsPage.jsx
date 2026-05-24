@@ -8,17 +8,48 @@ import {
 } from 'lucide-react';
 
 const AnalyticsPage = () => {
-  const { user: currentUser } = useAuthStore();
-  const [searchTerm, setSearchTerm] = useState('');
+  const { user: currentUser, loginTime } = useAuthStore();
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
 
   const isEmployeeOrIntern = currentUser?.role === 'INTERN' || currentUser?.role === 'EMPLOYEE';
 
+  // Live Timer Setup
+  React.useEffect(() => {
+    const sessionStart = loginTime ? new Date(loginTime) : new Date();
+    
+    const updateTimer = () => {
+      const diffInSecs = Math.floor((new Date() - sessionStart) / 1000);
+      setElapsedSeconds(diffInSecs >= 0 ? diffInSecs : 0);
+    };
+    
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [loginTime]);
+
+  const formatElapsed = (totalSeconds) => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    return [
+      hrs.toString().padStart(2, '0'),
+      mins.toString().padStart(2, '0'),
+      secs.toString().padStart(2, '0')
+    ].join(':');
+  };
+
+  const formatLoginTime = (isoString) => {
+    if (!isoString) return 'Just now';
+    return new Date(isoString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  };
+
   // Mock Global Stats
   const stats = isEmployeeOrIntern ? [
-    { label: 'My Total Sessions', value: '24', change: '+8%', isPositive: true, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'My Active Sessions', value: '1', change: '0%', isPositive: true, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { label: 'My Avg Session Time', value: '45m', change: '+15%', isPositive: true, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-    { label: 'My Engagement Rate', value: '96%', change: '+2%', isPositive: true, icon: TrendingUp, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }
+    { label: 'My Login Time', value: formatLoginTime(loginTime), change: 'Live', isPositive: true, icon: Clock, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'My Live Active Time', value: formatElapsed(elapsedSeconds), change: '+1s', isPositive: true, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'My Total Sessions', value: '25', change: '+12%', isPositive: true, icon: Users, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'My Engagement Rate', value: '98%', change: '+2%', isPositive: true, icon: TrendingUp, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }
   ] : [
     { label: 'Total Users', value: '1,248', change: '+12%', isPositive: true, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
     { label: 'Active Sessions', value: '432', change: '+5%', isPositive: true, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
@@ -39,12 +70,12 @@ const AnalyticsPage = () => {
   const displayedUsers = isEmployeeOrIntern
     ? [
         {
-          id: currentUser.id || (currentUser.role === 'EMPLOYEE' ? 'USR-EMP' : 'USR-INT'),
-          name: `${currentUser.first_name || 'Shree'} ${currentUser.last_name || 'Bhore'}`.trim(),
-          email: currentUser.email || (currentUser.role === 'EMPLOYEE' ? 'employee@syncsphere.com' : 'intern@syncsphere.com'),
-          role: currentUser.role || 'EMPLOYEE',
+          id: currentUser?.id || (currentUser?.role === 'EMPLOYEE' ? 'USR-EMP' : 'USR-INT'),
+          name: `${currentUser?.first_name || 'Shree'} ${currentUser?.last_name || 'Bhore'}`.trim(),
+          email: currentUser?.email || (currentUser?.role === 'EMPLOYEE' ? 'employee@syncsphere.com' : 'intern@syncsphere.com'),
+          role: currentUser?.role || 'EMPLOYEE',
           status: 'Active',
-          lastActive: 'Just now',
+          lastActive: `Active: ${formatElapsed(elapsedSeconds)}`,
           joinDate: 'May 2026'
         }
       ]
@@ -60,9 +91,9 @@ const AnalyticsPage = () => {
 
   const displayedHistory = isEmployeeOrIntern
     ? [
-        { id: 1, user: `${currentUser.first_name || 'Shree'} ${currentUser.last_name || 'Bhore'}`.trim(), action: 'Viewed analytics dashboard', time: '10:45 AM', type: 'system' },
-        { id: 2, user: `${currentUser.first_name || 'Shree'} ${currentUser.last_name || 'Bhore'}`.trim(), action: 'Updated profile information', time: '09:12 AM', type: 'document' },
-        { id: 3, user: `${currentUser.first_name || 'Shree'} ${currentUser.last_name || 'Bhore'}`.trim(), action: 'Logged in successfully', time: '09:00 AM', type: 'system' },
+        { id: 1, user: `${currentUser?.first_name || 'Shree'} ${currentUser?.last_name || 'Bhore'}`.trim(), action: 'Viewed analytics dashboard', time: 'Just now', type: 'system' },
+        { id: 2, user: `${currentUser?.first_name || 'Shree'} ${currentUser?.last_name || 'Bhore'}`.trim(), action: 'Updated profile information', time: '09:12 AM', type: 'document' },
+        { id: 3, user: `${currentUser?.first_name || 'Shree'} ${currentUser?.last_name || 'Bhore'}`.trim(), action: `Logged in at ${formatLoginTime(loginTime)}`, time: formatLoginTime(loginTime), type: 'system' },
       ]
     : globalHistory;
 
