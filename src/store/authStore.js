@@ -9,6 +9,7 @@ export const useAuthStore = create(
       refreshToken: null,
       isAuthenticated: false,
       loginTime: null,
+      userRoles: {}, // Maps userId -> display role (INTERN / EMPLOYEE / ADMIN)
       login: (user, token, refreshToken) => set({ user, token, refreshToken, isAuthenticated: true, loginTime: new Date().toISOString() }),
       logout: () => {
         set({ user: null, token: null, refreshToken: null, isAuthenticated: false, loginTime: null })
@@ -18,6 +19,10 @@ export const useAuthStore = create(
         console.log('[Auth Logout] Cleared all authentication tokens from localStorage successfully.')
       },
       updateUser: (data) => set((state) => ({ user: { ...state.user, ...data } })),
+      // Save the real display-role for a user so EventsPage can show correct creator role
+      setUserRole: (userId, role) => set((state) => ({
+        userRoles: { ...state.userRoles, [String(userId)]: role }
+      })),
     }),
     {
       name: 'auth-storage',
@@ -26,7 +31,8 @@ export const useAuthStore = create(
         refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        loginTime: state.loginTime
+        loginTime: state.loginTime,
+        userRoles: state.userRoles
       }),
     }
   )

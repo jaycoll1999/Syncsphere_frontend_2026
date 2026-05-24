@@ -13,7 +13,7 @@ const LoginPage = () => {
   const { register, handleSubmit, formState: { errors } } = useForm()
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
-  const { login } = useAuthStore()
+  const { login, setUserRole } = useAuthStore()
   const [loading, setLoading] = useState(false)
   const [showConfigModal, setShowConfigModal] = useState(false)
   const [backendIp, setBackendIp] = useState(() => {
@@ -130,6 +130,8 @@ const LoginPage = () => {
       }
 
       login(localUser, token, refreshToken)
+      // Persist this user's real display role so EventsPage shows correct creator label
+      if (localUser?.id) setUserRole(localUser.id, selectedRole)
       toast.success(activeTab === 'signin' ? `Logged in successfully as ${selectedRole.toLowerCase()}!` : `Registered successfully!`)
       
       if (selectedRole === 'ADMIN') {
