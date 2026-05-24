@@ -67,7 +67,30 @@ const ProfilePage = () => {
         if (!user?.email) {
           setIsLoading(true)
         }
-        const response = await axiosInstance.get('/auth/me')
+
+        // Retrieve token directly to guarantee authorization payload is present
+        let currentToken = localStorage.getItem('token')
+        if (!currentToken) {
+          const storedAuth = localStorage.getItem('auth-storage')
+          if (storedAuth) {
+            try {
+              currentToken = JSON.parse(storedAuth)?.state?.token
+            } catch (e) {
+              console.error('Failed to parse auth storage', e)
+            }
+          }
+        }
+        if (!currentToken) {
+          currentToken = useAuthStore.getState().token
+        }
+
+        console.log('[ProfilePage] Fetching profile with token:', currentToken ? `Bearer ${currentToken.substring(0, 15)}...` : 'NONE')
+
+        const response = await axiosInstance.get('/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${currentToken}`
+          }
+        })
         const userData = response.data?.data || response.data
         if (userData) {
           setFirstName(userData.first_name || '')

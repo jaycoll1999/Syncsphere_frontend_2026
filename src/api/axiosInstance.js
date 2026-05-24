@@ -22,6 +22,34 @@ axiosInstance.interceptors.request.use(
     
     config.baseURL = apiBase
 
+    // Attach Token FIRST before logging or sending so it's fully populated and visible in the logs
+    let token = useAuthStore.getState().token
+    
+    // Fallback 1: Read from the plain 'token' key in localStorage (synchronous and always fresh)
+    if (!token) {
+      token = localStorage.getItem('token')
+    }
+    
+    // Fallback 2: If Zustand hasn't finished hydrating yet, synchronously read the token from localStorage
+    if (!token) {
+      const storedAuth = localStorage.getItem('auth-storage')
+      if (storedAuth) {
+        try {
+          token = JSON.parse(storedAuth)?.state?.token
+        } catch (e) {
+          console.error('[Axios Request Interceptor] Failed to parse auth-storage fallback:', e)
+        }
+      }
+    }
+
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`
+      if (typeof config.headers.set === 'function') {
+        config.headers.set('Authorization', `Bearer ${token}`)
+      }
+    }
+
     const fullPath = `${config.baseURL || ''}${config.url.startsWith('/') ? '' : '/'}${config.url}`
     const absoluteUrl = config.url.startsWith('http://') || config.url.startsWith('https://') 
       ? config.url 
@@ -36,10 +64,6 @@ axiosInstance.interceptors.request.use(
   Payload Data:`, config.data, `
   Headers:`, config.headers)
 
-    const token = useAuthStore.getState().token
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
     return config
   },
   (error) => {
@@ -64,7 +88,9 @@ axiosInstance.interceptors.response.use(
     const absoluteUrl = originalRequest 
       ? (originalRequest.url.startsWith('http://') || originalRequest.url.startsWith('https://') 
         ? originalRequest.url 
-        : `${window.location.origin}${fullPath}`)
+        : (originalRequest.baseURL?.startsWith('http://') || originalRequest.baseURL?.startsWith('https://')
+          ? fullPath
+          : `${window.location.origin}${fullPath}`))
       : 'N/A'
 
     console.error(`[Axios Response Error]
@@ -83,24 +109,84 @@ axiosInstance.interceptors.response.use(
                         originalRequest?.url?.includes('/auth/register') || 
                         originalRequest?.url?.includes('/auth/refresh-token')
 
-    // 401: attempt POST /auth/refresh-token, on failure logout + redirect /login
-    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
+    // Trigger refresh for 401 Unauthorized or 403 Forbidden with 'Not authenticated' detail
+    const isTokenError = error.response?.status === 401 || 
+                         (error.response?.status === 403 && 
+                          (error.response?.data?.detail === 'Not authenticated' || 
+                           error.response?.data?.detail === 'Could not validate credentials' ||
+                           error.response?.data?.detail?.toLowerCase()?.includes('token')));
+
+    if (isTokenError && !originalRequest._retry && !isAuthRoute) {
       originalRequest._retry = true
       try {
-        const response = await axios.post(`${BASE_URL}/auth/refresh-token`)
-        const { token } = response.data
-        useAuthStore.setState({ token })
-        originalRequest.headers.Authorization = `Bearer ${token}`
+        const customIp = localStorage.getItem('VITE_BACKEND_IP') || '192.168.1.42:8000'
+        const formatted = customIp.trim()
+        const apiBase = formatted.startsWith('http://') || formatted.startsWith('https://') 
+          ? `${formatted}/api/v1` 
+          : `http://${formatted}/api/v1`
+
+        let storedRefreshToken = localStorage.getItem('refreshToken')
+        if (!storedRefreshToken) {
+          storedRefreshToken = useAuthStore.getState().refreshToken
+        }
+        if (!storedRefreshToken) {
+          const storedAuth = localStorage.getItem('auth-storage')
+          if (storedAuth) {
+            try {
+              storedRefreshToken = JSON.parse(storedAuth)?.state?.refreshToken
+            } catch (e) {}
+          }
+        }
+        
+        console.log('[Axios Session Manager] Attempting Session Refresh with Token:', storedRefreshToken)
+        
+        const response = await axios.post(`${apiBase}/auth/refresh-token`, {
+          refresh_token: storedRefreshToken,
+          refreshToken: storedRefreshToken
+        }, {
+          headers: {
+            'Authorization': `Bearer ${storedRefreshToken}`,
+            'X-Refresh-Token': storedRefreshToken
+          }
+        })
+        
+        const responseData = response.data
+        const newToken = responseData.token || 
+                         responseData.accessToken || 
+                         responseData.data?.token || 
+                         responseData.data?.accessToken
+        
+        const newRefreshToken = responseData.refresh_token || 
+                                responseData.refreshToken || 
+                                responseData.data?.refresh_token || 
+                                responseData.data?.refreshToken ||
+                                storedRefreshToken
+
+        console.log('[Axios Session Manager] Session successfully refreshed. New Token:', newToken)
+        
+        // Save to plain localStorage keys for easy external access
+        if (newToken) {
+          localStorage.setItem('token', newToken)
+          console.log('[Axios Session Manager] Saved plain Refreshed Access Token in localStorage:', `Bearer ${newToken.substring(0, 15)}...`)
+        }
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken)
+          console.log('[Axios Session Manager] Saved plain Refreshed Refresh Token in localStorage:', `${newRefreshToken.substring(0, 15)}...`)
+        }
+
+        useAuthStore.setState({ token: newToken, refreshToken: newRefreshToken })
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
         return axiosInstance(originalRequest)
       } catch (refreshError) {
+        console.error('[Axios Session Manager] Refresh token failed or expired. Logging out...', refreshError)
         logout()
         window.location.href = '/login'
         return Promise.reject(refreshError)
       }
     }
 
-    // 403: toast("You don't have permission to do this")
-    if (error.response?.status === 403) {
+    // 403: toast("You don't have permission to do this") if it is a genuine forbidden error, not an expired/missing token error
+    if (error.response?.status === 403 && !isTokenError) {
       toast.error("You don't have permission to do this")
     }
 

@@ -47,8 +47,19 @@ const LoginPage = () => {
       // Dynamically extract token (supports flat, nested, and accessToken formats)
       const token = responseData.token || 
                     responseData.accessToken || 
+                    responseData.access_token ||
+                    responseData.access ||
                     responseData.data?.token || 
-                    responseData.data?.accessToken
+                    responseData.data?.accessToken ||
+                    responseData.data?.access_token ||
+                    responseData.data?.access
+      
+      const refreshToken = responseData.refresh_token || 
+                           responseData.refreshToken || 
+                           responseData.refresh ||
+                           responseData.data?.refresh_token || 
+                           responseData.data?.refreshToken ||
+                           responseData.data?.refresh
       
       // Dynamically extract user (supports flat and nested formats)
       let user = responseData.user || responseData.data?.user
@@ -88,7 +99,16 @@ const LoginPage = () => {
         return
       }
 
-      login(user, token)
+      if (token) {
+        localStorage.setItem('token', token)
+        console.log('[Auth Login Success] Stored plain Access Token in localStorage:', `Bearer ${token.substring(0, 15)}...`)
+      }
+      if (refreshToken) {
+        localStorage.setItem('refreshToken', refreshToken)
+        console.log('[Auth Login Success] Stored plain Refresh Token in localStorage:', `${refreshToken.substring(0, 15)}...`)
+      }
+
+      login(user, token, refreshToken)
       toast.success(activeTab === 'signin' ? `Logged in successfully as ${selectedRole.toLowerCase()}!` : `Registered successfully!`)
       
       if (isRoleAdmin) {
