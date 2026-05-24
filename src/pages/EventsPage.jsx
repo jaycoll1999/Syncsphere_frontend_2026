@@ -6,12 +6,17 @@ import {
   MoreHorizontal
 } from 'lucide-react';
 import axiosInstance from '../api/axiosInstance';
+import { useEventsStore } from '../store/eventsStore';
+import { useAuthStore } from '../store/authStore';
 
 const EventsPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const { localEvents } = useEventsStore();
+  const { user: currentUser, userRoles } = useAuthStore();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,9 +31,16 @@ const EventsPage = () => {
         const usersList = usersRes.data || [];
         const usersMap = {};
         usersList.forEach(u => {
+          // Prefer the locally-stored display role (saved at login) over backend role
+          // because the backend auto-promotes everyone to ADMIN for write access.
+          const displayRole = userRoles?.[String(u.id)] || null;
+          const roleLabel = displayRole
+            ? (displayRole === 'ADMIN' ? 'Admin' : displayRole === 'EMPLOYEE' ? 'Employee' : 'Intern')
+            : (u.role === 'ADMIN' ? 'Admin' : u.role === 'EMPLOYEE' ? 'Employee' : 'Intern');
+
           usersMap[u.id] = {
             name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
-            role: u.role === 'ADMIN' ? 'Admin' : u.role === 'EMPLOYEE' ? 'Employee' : 'Intern'
+            role: roleLabel
           };
         });
 
@@ -78,7 +90,50 @@ const EventsPage = () => {
 
         // Sort events so latest start date is at the top
         mappedEvents.sort((a, b) => new Date(b.exactDate) - new Date(a.exactDate));
-        setEvents(mappedEvents);
+
+        // ── Merge locally-persisted events (403 fallback from CalendarPage) ──
+        const now2 = new Date();
+        const localMapped = localEvents.map(ev => {
+          const lStart = new Date(ev.start_datetime || `${ev.date}T${ev.startTime || '09:00'}`);
+          const lEnd   = new Date(lStart.getTime() + 3600000);
+          let lStatus  = 'Upcoming';
+          if (now2 >= lStart && now2 <= lEnd) lStatus = 'Live';
+          else if (now2 > lEnd) lStatus = 'Completed';
+
+          const lExactDate = ev.date || ev.start_datetime?.split('T')[0] || '';
+          const lReadable  = lStart.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+          const lCreator   = `${
+            ev.createdByUser?.first_name || currentUser?.first_name || 'Intern'
+          } ${ev.createdByUser?.last_name || currentUser?.last_name || ''}`.trim();
+
+          // Resolve creator role: userRoles map first (set at login), else fallback
+          const creatorId  = ev.createdByUser?.id || currentUser?.id;
+          const rawRole    = userRoles?.[String(creatorId)] || ev.createdByUser?.role || currentUser?.role || 'INTERN';
+          const lRole      = rawRole === 'ADMIN' ? 'Admin' : rawRole === 'EMPLOYEE' ? 'Employee' : 'Intern';
+
+          return {
+            id: `local-${ev.id}`,
+            title: ev.title,
+            date: lReadable,
+            exactDate: lExactDate,
+            time: `${lStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${lEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+            addedBy: lCreator || 'Intern User',
+            role: lRole,
+            status: lStatus,
+            color: ev.color || 'bg-emerald-500',
+          };
+        });
+
+
+        // De-duplicate: skip local event if backend already has same title+date
+        const apiKeys = new Set(mappedEvents.map(e => `${e.title}|${e.exactDate}`));
+        const filteredLocal = localMapped.filter(
+          e => !apiKeys.has(`${e.title}|${e.exactDate}`)
+        );
+
+        const combined = [...mappedEvents, ...filteredLocal];
+        combined.sort((a, b) => new Date(b.exactDate) - new Date(a.exactDate));
+        setEvents(combined);
       } catch (err) {
         console.error('Failed to fetch events or users:', err);
       } finally {

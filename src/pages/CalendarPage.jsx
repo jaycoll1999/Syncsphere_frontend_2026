@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../api/axiosInstance';
+import { useAuthStore } from '../store/authStore';
+import { useEventsStore } from '../store/eventsStore';
 import { 
   ChevronLeft, ChevronRight, Plus, 
   Calendar as CalendarIcon, X, Clock, Trash2,
@@ -87,11 +89,15 @@ const CalendarPage = () => {
   }, []);
 
   const navigate = useNavigate();
+  const { user: currentUser } = useAuthStore();
+  const { addLocalEvent } = useEventsStore();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState(null); // null means creating new
   const [selectedDate, setSelectedDate] = useState(null); // String 'YYYY-MM-DD'
+  
+  const isReadOnly = currentUser?.role === 'INTERN' && selectedEventId !== null;
   
   // 13 Fields Form State
   const [eventTitle, setEventTitle] = useState('');
@@ -329,9 +335,12 @@ const CalendarPage = () => {
               endTime: '23:59',
               color: payload.priority === 'URGENT' ? 'bg-red-500' :
                      payload.priority === 'HIGH' ? 'bg-orange-500' :
-                     payload.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500'
+                     payload.priority === 'MEDIUM' ? 'bg-amber-500' : 'bg-emerald-500',
+              createdByUser: currentUser
             };
             setEvents([...events, newLocalEvent]);
+            // Also persist to local store so EventsPage can display this event
+            addLocalEvent(newLocalEvent);
             toast.info("Event saved locally (your role is read-only on the backend).");
           } else {
             throw apiError;
@@ -559,10 +568,10 @@ const CalendarPage = () => {
               <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-white/10 bg-gray-50/50 dark:bg-white/5 shrink-0">
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <CalendarIcon className="w-5 h-5 text-indigo-500" />
-                  {selectedEventId ? 'Edit Event Details' : 'Create New Event'}
+                  {selectedEventId ? (isReadOnly ? 'View Event Details' : 'Edit Event Details') : 'Create New Event'}
                 </h3>
                 <div className="flex items-center gap-2">
-                  {selectedEventId && (
+                  {selectedEventId && !isReadOnly && (
                     <button 
                       type="button"
                       onClick={handleDeleteEvent}
@@ -593,6 +602,7 @@ const CalendarPage = () => {
                     <input
                       type="text"
                       value={eventTitle}
+                      disabled={isReadOnly}
                       onChange={(e) => {
                         setEventTitle(e.target.value);
                         if (formErrors.title) setFormErrors({ ...formErrors, title: null });
@@ -611,6 +621,7 @@ const CalendarPage = () => {
                     <div className="relative">
                       <select
                         value={eventType}
+                        disabled={isReadOnly}
                         onChange={(e) => setEventType(e.target.value)}
                         className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow appearance-none cursor-pointer"
                       >
@@ -633,6 +644,7 @@ const CalendarPage = () => {
                     <div className="relative">
                       <select
                         value={eventStatus}
+                        disabled={isReadOnly}
                         onChange={(e) => setEventStatus(e.target.value)}
                         className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow appearance-none cursor-pointer"
                       >
@@ -653,6 +665,7 @@ const CalendarPage = () => {
                     <div className="relative">
                       <select
                         value={eventPriority}
+                        disabled={isReadOnly}
                         onChange={(e) => setEventPriority(e.target.value)}
                         className="w-full pl-9 pr-10 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow appearance-none cursor-pointer font-medium"
                       >
@@ -680,6 +693,7 @@ const CalendarPage = () => {
                     <div className="relative">
                       <select
                         value={eventTimezone}
+                        disabled={isReadOnly}
                         onChange={(e) => setEventTimezone(e.target.value)}
                         className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow appearance-none cursor-pointer"
                       >
@@ -702,6 +716,7 @@ const CalendarPage = () => {
                       <input
                         type="date"
                         value={eventStartDatetime ? eventStartDatetime.split('T')[0] : ''}
+                        disabled={isReadOnly}
                         onChange={(e) => {
                           setEventStartDatetime(`${e.target.value}T00:00`);
                           if (formErrors.start_datetime) setFormErrors({ ...formErrors, start_datetime: null });
@@ -714,6 +729,7 @@ const CalendarPage = () => {
                       <input
                         type="datetime-local"
                         value={eventStartDatetime}
+                        disabled={isReadOnly}
                         onChange={(e) => {
                           setEventStartDatetime(e.target.value);
                           if (formErrors.start_datetime) setFormErrors({ ...formErrors, start_datetime: null });
@@ -733,8 +749,11 @@ const CalendarPage = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setEventAllDay(!eventAllDay)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      disabled={isReadOnly}
+                      onClick={() => !isReadOnly && setEventAllDay(!eventAllDay)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                      } ${
                         eventAllDay ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
                       }`}
                     >
@@ -752,6 +771,7 @@ const CalendarPage = () => {
                     <input
                       type="text"
                       value={eventLocation}
+                      disabled={isReadOnly}
                       onChange={(e) => setEventLocation(e.target.value)}
                       placeholder="e.g. Conference Room A, Zoom link, etc."
                       className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
@@ -765,6 +785,7 @@ const CalendarPage = () => {
                       type="number"
                       min="1"
                       value={eventMaxAttendees}
+                      disabled={isReadOnly}
                       onChange={(e) => setEventMaxAttendees(e.target.value)}
                       placeholder="e.g. 20 (leave blank for unlimited)"
                       className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow"
@@ -778,8 +799,11 @@ const CalendarPage = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setEventIsPublic(!eventIsPublic)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      disabled={isReadOnly}
+                      onClick={() => !isReadOnly && setEventIsPublic(!eventIsPublic)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                      } ${
                         eventIsPublic ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
                       }`}
                     >
@@ -799,8 +823,11 @@ const CalendarPage = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setEventRequiresRegistration(!eventRequiresRegistration)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      disabled={isReadOnly}
+                      onClick={() => !isReadOnly && setEventRequiresRegistration(!eventRequiresRegistration)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                      } ${
                         eventRequiresRegistration ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
                       }`}
                     >
@@ -819,8 +846,11 @@ const CalendarPage = () => {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setEventReminder(!eventReminder)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      disabled={isReadOnly}
+                      onClick={() => !isReadOnly && setEventReminder(!eventReminder)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isReadOnly ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                      } ${
                         eventReminder ? 'bg-indigo-600' : 'bg-gray-200 dark:bg-gray-700'
                       }`}
                     >
@@ -838,6 +868,7 @@ const CalendarPage = () => {
                     <textarea
                       rows="4"
                       value={eventDescription}
+                      disabled={isReadOnly}
                       onChange={(e) => setEventDescription(e.target.value)}
                       placeholder="Add a brief description..."
                       className="w-full px-4 py-3 bg-gray-50 dark:bg-[#0B0F19] border border-gray-200 dark:border-white/10 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-shadow resize-none"
@@ -853,14 +884,16 @@ const CalendarPage = () => {
                     onClick={closeEventModal}
                     className="px-5 py-3 border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-all"
                   >
-                    Cancel
+                    {isReadOnly ? 'Close' : 'Cancel'}
                   </button>
-                  <button
-                    type="submit"
-                    className="px-7 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    {selectedEventId ? 'Save Changes' : 'Create Event'}
-                  </button>
+                  {!isReadOnly && (
+                    <button
+                      type="submit"
+                      className="px-7 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {selectedEventId ? 'Save Changes' : 'Create Event'}
+                    </button>
+                  )}
                 </div>
               </form>
             </motion.div>
