@@ -13,25 +13,22 @@ const HolidayCalendarViewPage = () => {
   // Comprehensive 2026 Holiday Data
   const holidays = [
     { id: 1, title: "New Year's Day", date: '2026-01-01', type: 'Official', color: 'bg-emerald-500', description: "The first day of the new year." },
-    { id: 2, title: "Martin Luther King Jr. Day", date: '2026-01-19', type: 'Official', color: 'bg-blue-500', description: "Celebrating the life and achievements of MLK Jr." },
-    { id: 3, title: "Valentine's Day", date: '2026-02-14', type: 'Observance', color: 'bg-pink-500', description: "Feast of Saint Valentine." },
-    { id: 4, title: "Presidents' Day", date: '2026-02-16', type: 'Official', color: 'bg-blue-500', description: "Honoring all persons who served as US presidents." },
-    { id: 5, title: "St. Patrick's Day", date: '2026-03-17', type: 'Observance', color: 'bg-green-600', description: "Feast day of Saint Patrick." },
-    { id: 6, title: "Easter Sunday", date: '2026-04-05', type: 'Observance', color: 'bg-purple-500', description: "Christian festival and holiday." },
-    { id: 7, title: "Earth Day", date: '2026-04-22', type: 'Observance', color: 'bg-emerald-600', description: "Support for environmental protection." },
-    { id: 8, title: "Cinco de Mayo", date: '2026-05-05', type: 'Observance', color: 'bg-orange-500', description: "Celebration of Mexican heritage." },
-    { id: 9, title: "Mother's Day", date: '2026-05-10', type: 'Observance', color: 'bg-pink-400', description: "Honoring mothers and motherhood." },
-    { id: 10, title: "Memorial Day", date: '2026-05-25', type: 'Official', color: 'bg-blue-500', description: "Honoring military personnel who died in service." },
-    { id: 11, title: "Juneteenth", date: '2026-06-19', type: 'Official', color: 'bg-red-500', description: "Emancipation of enslaved African Americans." },
-    { id: 12, title: "Father's Day", date: '2026-06-21', type: 'Observance', color: 'bg-blue-400', description: "Honoring fathers and fatherhood." },
-    { id: 13, title: "Independence Day", date: '2026-07-04', type: 'Official', color: 'bg-red-600', description: "Declaration of Independence." },
-    { id: 14, title: "Labor Day", date: '2026-09-07', type: 'Official', color: 'bg-blue-500', description: "Honoring the American labor movement." },
-    { id: 15, title: "Halloween", date: '2026-10-31', type: 'Observance', color: 'bg-orange-600', description: "Eve of the Western Christian feast of All Hallows' Day." },
-    { id: 16, title: "Veterans Day", date: '2026-11-11', type: 'Official', color: 'bg-blue-500', description: "Honoring military veterans." },
-    { id: 17, title: "Thanksgiving Day", date: '2026-11-26', type: 'Official', color: 'bg-amber-600', description: "Day of giving thanks." },
-    { id: 18, title: "Christmas Eve", date: '2026-12-24', type: 'Observance', color: 'bg-red-500', description: "Day before Christmas." },
-    { id: 19, title: "Christmas Day", date: '2026-12-25', type: 'Official', color: 'bg-emerald-600', description: "Christian holiday celebrating the birth of Jesus." },
-    { id: 20, title: "New Year's Eve", date: '2026-12-31', type: 'Observance', color: 'bg-indigo-500', description: "Last day of the year." }
+    { id: 2, title: "Makar Sankranti / Pongal", date: '2026-01-14', type: 'Observance', color: 'bg-orange-500', description: "Harvest festival celebrating the arrival of spring." },
+    { id: 3, title: "Republic Day", date: '2026-01-26', type: 'Official', color: 'bg-blue-500', description: "Honoring the date on which the Constitution of India came into effect." },
+    { id: 4, title: "Holi", date: '2026-03-03', type: 'Observance', color: 'bg-orange-500', description: "The ancient Hindu festival of colors, celebrating the triumph of good over evil." },
+    { id: 5, title: "Maha Shivratri", date: '2026-03-17', type: 'Observance', color: 'bg-orange-500', description: "A grand festival dedicated to worshiping Lord Shiva." },
+    { id: 6, title: "Good Friday", date: '2026-04-03', type: 'Official', color: 'bg-emerald-500', description: "Christian holiday commemorating the crucifixion of Jesus." },
+    { id: 7, title: "Ambedkar Jayanti", date: '2026-04-14', type: 'Official', color: 'bg-blue-500', description: "Dr. B. R. Ambedkar's birth anniversary." },
+    { id: 8, title: "Eid al-Fitr", date: '2026-04-20', type: 'Observance', color: 'bg-orange-500', description: "Festival of breaking the fast, marking the end of Ramadan." },
+    { id: 9, title: "May Day / Labor Day", date: '2026-05-01', type: 'Official', color: 'bg-emerald-500', description: "Celebrating the achievements and rights of workers." },
+    { id: 10, title: "Independence Day", date: '2026-08-15', type: 'Official', color: 'bg-blue-500', description: "Commemorating the nation's independence from British rule in 1947." },
+    { id: 11, title: "Raksha Bandhan", date: '2026-08-28', type: 'Observance', color: 'bg-orange-500', description: "Celebrating the eternal bond of love and protection between brothers and sisters." },
+    { id: 12, title: "Ganesh Chaturthi", date: '2026-09-14', type: 'Observance', color: 'bg-orange-500', description: "Festival celebrating the arrival of Lord Ganesha to earth." },
+    { id: 13, title: "Gandhi Jayanti", date: '2026-10-02', type: 'Official', color: 'bg-blue-500', description: "Celebrating the birth anniversary of Mahatma Gandhi, the Father of the Nation." },
+    { id: 14, title: "Dussehra", date: '2026-10-20', type: 'Observance', color: 'bg-orange-500', description: "Vijayadashami, celebrating the victory of Lord Rama over Ravana." },
+    { id: 15, title: "Diwali / Deepavali", date: '2026-11-08', type: 'Observance', color: 'bg-orange-500', description: "The festival of lights, celebrating the return of Lord Rama to Ayodhya." },
+    { id: 16, title: "Guru Nanak Jayanti", date: '2026-11-25', type: 'Official', color: 'bg-emerald-500', description: "Birth anniversary of the first Sikh Guru, Guru Nanak Dev Ji." },
+    { id: 17, title: "Christmas Day", date: '2026-12-25', type: 'Official', color: 'bg-emerald-500', description: "Celebration of the birth of Jesus Christ." },
   ];
 
   // Modal State
@@ -147,8 +144,15 @@ const HolidayCalendarViewPage = () => {
         <div className="flex-1 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-xl shadow-gray-200/20 dark:shadow-none flex flex-col">
           {/* Days of Week Header */}
           <div className="grid grid-cols-7 border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            {daysOfWeek.map((day) => (
-              <div key={day} className="py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-r border-gray-200 dark:border-white/10 last:border-r-0">
+            {daysOfWeek.map((day, idx) => (
+              <div 
+                key={day} 
+                className={`py-3 text-center text-xs font-bold uppercase tracking-wider border-r last:border-r-0
+                  ${idx === 0 
+                    ? 'text-red-500 border-red-200 dark:border-red-500/20' 
+                    : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/10'
+                  }`}
+              >
                 {day}
               </div>
             ))}
@@ -162,14 +166,20 @@ const HolidayCalendarViewPage = () => {
               return (
                 <div 
                   key={i} 
-                  className={`min-h-[100px] border-b border-r border-gray-200 dark:border-white/10 last:border-r-0 p-1 sm:p-2 transition-colors relative
+                  className={`min-h-[100px] border-b border-r p-1 sm:p-2 transition-colors relative
+                    ${i % 7 === 0 
+                      ? 'border-red-200 dark:border-red-500/20 bg-red-500/[0.01] dark:bg-red-500/[0.02]' 
+                      : 'border-gray-200 dark:border-white/10'
+                    }
                     ${!dateObj.isCurrentMonth ? 'bg-gray-50/50 dark:bg-[#0B0F19]/50 text-gray-400 dark:text-gray-600' : 'text-gray-700 dark:text-gray-200'}`}
                 >
                   <div className="flex justify-between items-start">
-                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium ${
+                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${
                       dateObj.isToday 
-                        ? 'bg-emerald-600 text-white shadow-md' 
-                        : ''
+                        ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30' 
+                        : i % 7 === 0
+                          ? 'text-red-500 group-hover:bg-red-100 dark:group-hover:bg-red-500/10 transition-colors'
+                          : 'group-hover:bg-gray-200 dark:group-hover:bg-white/10 transition-colors'
                     }`}>
                       {dateObj.day}
                     </span>

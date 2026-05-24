@@ -41,22 +41,7 @@ const Sidebar = ({ isSidebarOpen, onClose }) => {
     { icon: Users, label: 'Team', path: '/team' },
     { icon: CalendarDays, label: 'Calendar', path: '/calendar' },
     { icon: ListChecks, label: 'Events', path: '/events' },
-    {
-      icon: FileText,
-      label: 'Leave',
-      path: '/leave',
-      subLinks: [
-        { icon: Wallet, label: 'Leave Balance', path: '/leave/balance' },
-      ],
-    },
-    {
-      icon: Palmtree,
-      label: 'Holidays',
-      path: '/holidays',
-      subLinks: [
-        { icon: CalendarDays, label: 'Calendar View', path: '/holidays/calendar' },
-      ],
-    },
+    { icon: FileText, label: 'Leave Balance', path: '/leave/balance' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     {
       icon: User,

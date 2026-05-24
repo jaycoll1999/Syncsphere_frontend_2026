@@ -16,12 +16,11 @@ export const useAuthStore = create(
     }),
     {
       name: 'auth-storage',
-      // The prompt says "Persist token to localStorage", but usually we persist the whole auth state or just token.
-      // Let's persist token and user if needed, or just token.
-      // If we only persist token, we need to fetch user on mount.
-      // Let's persist the whole state for simplicity unless specified otherwise.
-      // The prompt says "Persist token to localStorage". So I'll persist the token.
-      partialize: (state) => ({ token: state.token }),
+      partialize: (state) => ({ 
+        token: state.token,
+        user: state.user,
+        isAuthenticated: state.isAuthenticated
+      }),
     }
   )
 )

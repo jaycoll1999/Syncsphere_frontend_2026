@@ -11,11 +11,33 @@ const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const today = new Date();
 
+  const currentYear = today.getFullYear();
+  const initialHolidays = [
+    { id: 'h1', title: "New Year's Day", date: `${currentYear}-01-01`, startTime: '00:00', endTime: '23:59', color: 'bg-amber-500' },
+    { id: 'h2', title: "Makar Sankranti / Pongal", date: `${currentYear}-01-14`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h3', title: "Republic Day", date: `${currentYear}-01-26`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h4', title: "Holi", date: `${currentYear}-03-03`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h5', title: "Maha Shivratri", date: `${currentYear}-03-17`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h6', title: "Good Friday", date: `${currentYear}-04-03`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h7', title: "Ambedkar Jayanti", date: `${currentYear}-04-14`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h8', title: "Eid al-Fitr", date: `${currentYear}-04-20`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h9', title: "May Day / Labor Day", date: `${currentYear}-05-01`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h10', title: "Independence Day", date: `${currentYear}-08-15`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h11', title: "Raksha Bandhan", date: `${currentYear}-08-28`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h12', title: "Ganesh Chaturthi", date: `${currentYear}-09-14`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h13', title: "Gandhi Jayanti", date: `${currentYear}-10-02`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h14', title: "Dussehra", date: `${currentYear}-10-20`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h15', title: "Diwali / Deepavali", date: `${currentYear}-11-08`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h16', title: "Guru Nanak Jayanti", date: `${currentYear}-11-25`, startTime: '09:00', endTime: '18:00', color: 'bg-amber-500' },
+    { id: 'h17', title: "Christmas Day", date: `${currentYear}-12-25`, startTime: '00:00', endTime: '23:59', color: 'bg-amber-500' },
+  ];
+
   // Mock Events State (now includes startTime and endTime)
   const [events, setEvents] = useState([
     { id: 1, title: 'Team Sync', date: new Date(today.getFullYear(), today.getMonth(), 15).toISOString().split('T')[0], startTime: '10:00', endTime: '11:00', color: 'bg-blue-500' },
     { id: 2, title: 'Project Deadline', date: new Date(today.getFullYear(), today.getMonth(), 22).toISOString().split('T')[0], startTime: '15:00', endTime: '16:00', color: 'bg-red-500' },
     { id: 3, title: 'Client Meeting', date: new Date(today.getFullYear(), today.getMonth(), 8).toISOString().split('T')[0], startTime: '13:30', endTime: '14:30', color: 'bg-emerald-500' },
+    ...initialHolidays
   ]);
 
   // Modal State
@@ -275,8 +297,15 @@ const CalendarPage = () => {
         <div className="flex-1 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-xl shadow-gray-200/20 dark:shadow-none flex flex-col">
           {/* Days of Week Header */}
           <div className="grid grid-cols-7 border-b border-gray-200 dark:border-white/10 bg-gray-50 dark:bg-white/5">
-            {daysOfWeek.map((day) => (
-              <div key={day} className="py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider border-r border-gray-200 dark:border-white/10 last:border-r-0">
+            {daysOfWeek.map((day, idx) => (
+              <div 
+                key={day} 
+                className={`py-3 text-center text-xs font-bold uppercase tracking-wider border-r last:border-r-0
+                  ${idx === 0 
+                    ? 'text-red-500 border-red-200 dark:border-red-500/20' 
+                    : 'text-gray-500 dark:text-gray-400 border-gray-200 dark:border-white/10'
+                  }`}
+              >
                 {day}
               </div>
             ))}
@@ -294,14 +323,20 @@ const CalendarPage = () => {
                 <div 
                   key={i} 
                   onClick={() => handleDayClick(dateObj.dateString)}
-                  className={`min-h-[100px] border-b border-r border-gray-200 dark:border-white/10 last:border-r-0 p-1 sm:p-2 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-white/5 relative group
+                  className={`min-h-[100px] border-b border-r p-1 sm:p-2 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-white/5 relative group
+                    ${i % 7 === 0 
+                      ? 'border-red-200 dark:border-red-500/20 bg-red-500/[0.01] dark:bg-red-500/[0.02]' 
+                      : 'border-gray-200 dark:border-white/10'
+                    }
                     ${!dateObj.isCurrentMonth ? 'bg-gray-50/50 dark:bg-[#0B0F19]/50 text-gray-400 dark:text-gray-600' : 'text-gray-700 dark:text-gray-200'}`}
                 >
                   <div className="flex justify-between items-start">
-                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-medium ${
+                    <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${
                       dateObj.isToday 
-                        ? 'bg-indigo-600 text-white shadow-md' 
-                        : 'group-hover:bg-gray-200 dark:group-hover:bg-white/10 transition-colors'
+                        ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30' 
+                        : i % 7 === 0
+                          ? 'text-red-500 group-hover:bg-red-100 dark:group-hover:bg-red-500/10 transition-colors'
+                          : 'group-hover:bg-gray-200 dark:group-hover:bg-white/10 transition-colors'
                     }`}>
                       {dateObj.day}
                     </span>

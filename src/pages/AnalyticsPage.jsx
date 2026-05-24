@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useAuthStore } from '../store/authStore';
 import { 
   Users, Activity, TrendingUp, Clock, 
   Search, Filter, ChevronDown, CheckCircle, 
@@ -7,10 +8,18 @@ import {
 } from 'lucide-react';
 
 const AnalyticsPage = () => {
+  const { user: currentUser } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
 
+  const isEmployeeOrIntern = currentUser?.role === 'INTERN' || currentUser?.role === 'EMPLOYEE';
+
   // Mock Global Stats
-  const stats = [
+  const stats = isEmployeeOrIntern ? [
+    { label: 'My Total Sessions', value: '24', change: '+8%', isPositive: true, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
+    { label: 'My Active Sessions', value: '1', change: '0%', isPositive: true, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
+    { label: 'My Avg Session Time', value: '45m', change: '+15%', isPositive: true, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
+    { label: 'My Engagement Rate', value: '96%', change: '+2%', isPositive: true, icon: TrendingUp, color: 'text-indigo-500', bg: 'bg-indigo-500/10' }
+  ] : [
     { label: 'Total Users', value: '1,248', change: '+12%', isPositive: true, icon: Users, color: 'text-blue-500', bg: 'bg-blue-500/10' },
     { label: 'Active Sessions', value: '432', change: '+5%', isPositive: true, icon: Activity, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
     { label: 'Avg Session Time', value: '24m', change: '-2%', isPositive: false, icon: Clock, color: 'text-amber-500', bg: 'bg-amber-500/10' },
@@ -26,6 +35,21 @@ const AnalyticsPage = () => {
     { id: 'USR-005', name: 'David Kim', email: 'david.k@example.com', role: 'USER', status: 'Suspended', lastActive: '1 week ago', joinDate: 'May 01, 2026' },
   ];
 
+  // Decide which users to show
+  const displayedUsers = isEmployeeOrIntern
+    ? [
+        {
+          id: currentUser.id || (currentUser.role === 'EMPLOYEE' ? 'USR-EMP' : 'USR-INT'),
+          name: `${currentUser.first_name || 'Shree'} ${currentUser.last_name || 'Bhore'}`.trim(),
+          email: currentUser.email || (currentUser.role === 'EMPLOYEE' ? 'employee@syncsphere.com' : 'intern@syncsphere.com'),
+          role: currentUser.role || 'EMPLOYEE',
+          status: 'Active',
+          lastActive: 'Just now',
+          joinDate: 'May 2026'
+        }
+      ]
+    : allUsers;
+
   // Mock Global Past History
   const globalHistory = [
     { id: 1, user: 'Alex Morgan', action: 'Modified system settings', time: '10:45 AM', type: 'system' },
@@ -33,6 +57,14 @@ const AnalyticsPage = () => {
     { id: 3, user: 'Jessica Alba', action: 'Created new project timeline', time: 'Yesterday, 4:30 PM', type: 'project' },
     { id: 4, user: 'System', action: 'Automated backup completed', time: 'Yesterday, 2:00 AM', type: 'system' },
   ];
+
+  const displayedHistory = isEmployeeOrIntern
+    ? [
+        { id: 1, user: `${currentUser.first_name || 'Shree'} ${currentUser.last_name || 'Bhore'}`.trim(), action: 'Viewed analytics dashboard', time: '10:45 AM', type: 'system' },
+        { id: 2, user: `${currentUser.first_name || 'Shree'} ${currentUser.last_name || 'Bhore'}`.trim(), action: 'Updated profile information', time: '09:12 AM', type: 'document' },
+        { id: 3, user: `${currentUser.first_name || 'Shree'} ${currentUser.last_name || 'Bhore'}`.trim(), action: 'Logged in successfully', time: '09:00 AM', type: 'system' },
+      ]
+    : globalHistory;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -56,10 +88,13 @@ const AnalyticsPage = () => {
         <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent drop-shadow-sm">
-              User Analytics & History
+              {isEmployeeOrIntern ? 'My Analytics & History' : 'User Analytics & History'}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-2 max-w-2xl">
-              Comprehensive overview of all user details, system engagement, and historical activity logs.
+              {isEmployeeOrIntern 
+                ? 'Overview of your personal system engagement, sessions, and historical activity logs.'
+                : 'Comprehensive overview of all user details, system engagement, and historical activity logs.'
+              }
             </p>
           </div>
           <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-indigo-500/30">
@@ -101,7 +136,7 @@ const AnalyticsPage = () => {
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     <Users className="w-6 h-6 text-indigo-500" />
-                    All User Details
+                    {isEmployeeOrIntern ? 'My Details' : 'All User Details'}
                   </h3>
                 </div>
                 <div className="flex items-center gap-3">
@@ -133,7 +168,7 @@ const AnalyticsPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-white/5">
-                    {allUsers.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase())).map((user, i) => (
+                    {displayedUsers.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase())).map((user, i) => (
                       <tr key={i} className="hover:bg-gray-50/50 dark:hover:bg-white/[0.02] transition-colors group">
                         <td className="py-4 pl-4">
                           <div className="flex items-center gap-3">
@@ -193,7 +228,7 @@ const AnalyticsPage = () => {
               </div>
               
               <div className="relative pl-5 border-l-2 border-gray-100 dark:border-white/10 space-y-8 mt-2 flex-1">
-                {globalHistory.map((item, index) => (
+                {displayedHistory.map((item, index) => (
                   <motion.div 
                     key={item.id}
                     initial={{ opacity: 0, x: 20 }}
